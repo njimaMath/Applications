@@ -17,44 +17,148 @@
 
   <!-- JSX Script -->
   <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
 
-    const { useState, useEffect } = React;
+    // Define quiz data for each category
+    const quizSets = {
+      LR: [
+        { words: ['light', 'right'], sound: 'light' },
+        { words: ['lake', 'rake'], sound: 'rake' },
+        { words: ['glass', 'grass'], sound: 'grass' },
+        { words: ['play', 'pray'], sound: 'play' },
+        { words: ['fly', 'fry'], sound: 'fly' },
+        { words: ['lock', 'rock'], sound: 'lock' },
+        { words: ['clap', 'crap'], sound: 'clap' },
+        { words: ['lead', 'read'], sound: 'read' },
+        { words: ['collect', 'correct'], sound: 'collect' },
+        { words: ['lighten', 'righten'], sound: 'lighten' },
+      ],
+      ThS: [
+        { words: ['mouth', 'mouse'], sound: 'mouth' },
+        { words: ['sink', 'think'], sound: 'think' },
+        { words: ['bath', 'bass'], sound: 'bath' },
+        { words: ['three', 'tree'], sound: 'three' },
+        { words: ['thank', 'sank'], sound: 'thank' },
+        { words: ['thin', 'fin'], sound: 'thin' },
+        { words: ['path', 'pass'], sound: 'path' },
+        { words: ['thigh', 'sigh'], sound: 'thigh' },
+        { words: ['with', 'wis'], sound: 'with' },
+        { words: ['mouths', 'mouses'], sound: 'mouths' },
+      ],
+      VB: [
+        { words: ['vat', 'bat'], sound: 'vat' },
+        { words: ['vase', 'base'], sound: 'vase' },
+        { words: ['vote', 'boat'], sound: 'boat' },
+        { words: ['veil', 'bail'], sound: 'veil' },
+        { words: ['very', 'berry'], sound: 'very' },
+        { words: ['vent', 'bent'], sound: 'vent' },
+        { words: ['vile', 'bile'], sound: 'vile' },
+        { words: ['vet', 'bet'], sound: 'bet' },
+        { words: ['van', 'ban'], sound: 'van' },
+        { words: ['vow', 'bow'], sound: 'vow' },
+      ],
+      NNT: [
+        { words: ["It is a pen.", "It isn't a pen."], sound: "It isn't a pen." },
+        { words: ["I can see you.", "I can't see you."], sound: "I can't see you." },
+        { words: ["He is here.", "He isn't here."], sound: "He isn't here." },
+        { words: ["That's new.", "That isn't new."], sound: "That isn't new." },
+        { words: ["We want it.", "We wantn't it."], sound: "We want it." },
+        { words: ["It's different.", "It isn't different."], sound: "It isn't different." },
+        { words: ["We're going now.", "We aren't going now."], sound: "We aren't going now." },
+        { words: ["She won't do that.", "She want do that."], sound: "She won't do that." },
+        { words: ["Isn't he nice?", "Is he nice?"], sound: "Isn't he nice?" },
+        { words: ["That isn't tall.", "That's tall."], sound: "That isn't tall." },
+      ],
+      Vowels: [
+        { words: ['bit', 'beat'], sound: 'beat' },
+        { words: ['ship', 'sheep'], sound: 'sheep' },
+        { words: ['live', 'leave'], sound: 'leave' },
+        { words: ['full', 'fool'], sound: 'fool' },
+        { words: ['pull', 'pool'], sound: 'pool' },
+        { words: ['met', 'mate'], sound: 'mate' },
+        { words: ['rid', 'ride'], sound: 'ride' },
+        { words: ['cap', 'cup'], sound: 'cap' },
+        { words: ['cot', 'coat'], sound: 'coat' },
+        { words: ['not', 'note'], sound: 'note' },
+      ],
+    };
 
     const PhonicsQuizApp = () => {
-      const quizData = [
-        { words: ['mouth', 'mouse'], sound: 'mouth' },
-        { words: ['house', 'horse'], sound: 'horse' },
-        { words: ['three', 'tree'], sound: 'three' },
-        { words: ['ship', 'sheep'], sound: 'sheep' },
-        { words: ['thin', 'fin'], sound: 'thin' },
-        { words: ['bath', 'bat'], sound: 'bath' },
-        { words: ['thought', 'taught'], sound: 'thought' },
-        { words: ['sink', 'think'], sound: 'think' },
-        { words: ['thumb', 'sum'], sound: 'thumb' },
-        { words: ['path', 'pass'], sound: 'path' }
-      ];
-
+      const [selectedCategory, setSelectedCategory] = useState(null);
+      const [randomQuiz, setRandomQuiz] = useState(null);
       const [currentQuestion, setCurrentQuestion] = useState(0);
       const [selectedAnswer, setSelectedAnswer] = useState(null);
       const [result, setResult] = useState(null);
       const [score, setScore] = useState(0);
       const [gameOver, setGameOver] = useState(false);
 
-      const speakWord = (word) => {
-        const speech = new SpeechSynthesisUtterance(word);
-        speech.rate = 0.8;
-        window.speechSynthesis.speak(speech);
+      // Preload your audio files (adjust the paths to your environment)
+      const correctAudioRef = useRef(new Audio('correct.mp3'));
+      const incorrectAudioRef = useRef(new Audio('boo.mp3'));
+
+      // Gather the current quiz array depending on selectedCategory
+      // If 'Random' is chosen, we use randomQuiz; otherwise, pick from quizSets
+      let currentQuiz = [];
+      if (selectedCategory === 'Random') {
+        currentQuiz = randomQuiz || [];
+      } else if (selectedCategory) {
+        currentQuiz = quizSets[selectedCategory] || [];
+      }
+
+      // Shuffle helper function
+      const shuffleArray = (array) => {
+        const arr = [...array];
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
       };
 
+      // When user clicks a category, reset states for a new quiz
+      const startCategory = (cat) => {
+        setSelectedCategory(cat);
+        setCurrentQuestion(0);
+        setSelectedAnswer(null);
+        setResult(null);
+        setScore(0);
+        setGameOver(false);
+
+        // If the user chose the random quiz, merge all questions from all categories and shuffle
+        if (cat === 'Random') {
+          const allQuestions = [
+            ...quizSets.LR,
+            ...quizSets.ThS,
+            ...quizSets.VB,
+            ...quizSets.NNT,
+            ...quizSets.Vowels
+          ];
+          const shuffled = shuffleArray(allQuestions);
+          setRandomQuiz(shuffled);
+        } else {
+          setRandomQuiz(null);
+        }
+      };
+
+      // Check user answer
       const handleAnswerSelect = (answer) => {
+        const correctAnswer = currentQuiz[currentQuestion].sound;
+        const isCorrect = (answer === correctAnswer);
+
+        // Play correct/incorrect sound
+        if (isCorrect) {
+          correctAudioRef.current.play();
+        } else {
+          incorrectAudioRef.current.play();
+        }
+
         setSelectedAnswer(answer);
-        const currentSound = quizData[currentQuestion].sound;
-        const isCorrect = answer === currentSound;
         setResult(isCorrect ? "Correct!" : "Wrong!");
         if (isCorrect) setScore(score + 1);
 
+        // Proceed to next question or finish
         setTimeout(() => {
-          if (currentQuestion < quizData.length - 1) {
+          if (currentQuestion < currentQuiz.length - 1) {
             setCurrentQuestion(currentQuestion + 1);
             setSelectedAnswer(null);
             setResult(null);
@@ -64,15 +168,31 @@
         }, 1500);
       };
 
+      // Use SpeechSynthesis to speak words
+      const speakWord = (text) => {
+        const speech = new SpeechSynthesisUtterance(text);
+        speech.rate = 0.8;
+        window.speechSynthesis.speak(speech);
+      };
+
+      // Automatically speak a new question when it loads
       useEffect(() => {
-        if (!gameOver) {
+        if (!gameOver && selectedCategory !== null && currentQuiz.length > 0) {
           const timer = setTimeout(() => {
-            speakWord(quizData[currentQuestion].sound);
+            speakWord(currentQuiz[currentQuestion].sound);
           }, 500);
           return () => clearTimeout(timer);
         }
-      }, [currentQuestion, gameOver]);
+      }, [currentQuestion, gameOver, selectedCategory, currentQuiz]);
 
+      // Replay the current item
+      const playAgain = () => {
+        if (!gameOver && selectedCategory !== null && currentQuiz.length > 0) {
+          speakWord(currentQuiz[currentQuestion].sound);
+        }
+      };
+
+      // Restart quiz in the same category
       const restartQuiz = () => {
         setCurrentQuestion(0);
         setSelectedAnswer(null);
@@ -81,43 +201,125 @@
         setGameOver(false);
       };
 
-      const playAgain = () => {
-        speakWord(quizData[currentQuestion].sound);
+      // Return to top page (home)
+      const goHome = () => {
+        setSelectedCategory(null);
+        setRandomQuiz(null);
+        setCurrentQuestion(0);
+        setSelectedAnswer(null);
+        setResult(null);
+        setScore(0);
+        setGameOver(false);
       };
 
+      // If no category is selected, display the top menu
+      if (!selectedCategory) {
+        return (
+          <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+            <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6 text-center">
+              <h1 className="text-2xl font-bold mb-6">Phonics Quiz Categories</h1>
+              <p className="mb-6 text-gray-600">Choose a category to begin:</p>
+              <div className="grid grid-cols-1 gap-4">
+                <button
+                  onClick={() => startCategory('LR')}
+                  className="bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition"
+                >
+                  L & R
+                </button>
+                <button
+                  onClick={() => startCategory('ThS')}
+                  className="bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition"
+                >
+                  Th & S
+                </button>
+                <button
+                  onClick={() => startCategory('VB')}
+                  className="bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition"
+                >
+                  V & B
+                </button>
+                <button
+                  onClick={() => startCategory('NNT')}
+                  className="bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition"
+                >
+                  N & NT
+                </button>
+                <button
+                  onClick={() => startCategory('Vowels')}
+                  className="bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition"
+                >
+                  Vowels
+                </button>
+                {/* New button for non-specific (random) quizzes */}
+                <button
+                  onClick={() => startCategory('Random')}
+                  className="bg-purple-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-purple-700 transition"
+                >
+                  Mixed Quiz
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // Otherwise, render the quiz
       return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
           <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
-            <h1 className="text-2xl font-bold text-center mb-6">Phonics Quiz</h1>
+            <div className="flex justify-between items-center mb-4">
+              <h1 className="text-2xl font-bold">
+                Phonics Quiz: {selectedCategory}
+              </h1>
+              <button
+                onClick={goHome}
+                className="bg-gray-300 text-gray-800 px-3 py-1 rounded-lg text-sm hover:bg-gray-400"
+              >
+                Back
+              </button>
+            </div>
 
             {!gameOver ? (
               <>
                 <div className="mb-8">
-                  <p className="text-lg text-center mb-2">Question {currentQuestion + 1} of {quizData.length}</p>
-                  <p className="text-sm text-center text-gray-600 mb-4">Listen to the sound and choose the correct word</p>
+                  <p className="text-lg text-center mb-2">
+                    Question {currentQuestion + 1} of {currentQuiz.length}
+                  </p>
+                  <p className="text-sm text-center text-gray-600 mb-4">
+                    Listen and choose the correct answer
+                  </p>
 
                   <div className="flex justify-center mb-4">
                     <button 
                       onClick={playAgain}
                       className="bg-blue-100 text-blue-600 px-4 py-2 rounded-full flex items-center justify-center hover:bg-blue-200"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        className="h-5 w-5 mr-1" 
+                        viewBox="0 0 20 20" 
+                        fill="currentColor"
+                      >
+                        <path 
+                          fillRule="evenodd" 
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" 
+                          clipRule="evenodd" 
+                        />
                       </svg>
                       Play Sound Again
                     </button>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    {quizData[currentQuestion].words.map((word, index) => (
+                    {currentQuiz[currentQuestion].words.map((word, index) => (
                       <button
                         key={index}
                         onClick={() => handleAnswerSelect(word)}
                         disabled={selectedAnswer !== null}
                         className={`text-lg font-medium py-3 px-4 rounded-lg transition duration-150 ${
-                          selectedAnswer === word 
-                            ? word === quizData[currentQuestion].sound 
-                              ? 'bg-green-100 text-green-700 border-2 border-green-500' 
+                          selectedAnswer === word
+                            ? word === currentQuiz[currentQuestion].sound
+                              ? 'bg-green-100 text-green-700 border-2 border-green-500'
                               : 'bg-red-100 text-red-700 border-2 border-red-500'
                             : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
                         }`}
@@ -128,33 +330,50 @@
                   </div>
 
                   {result && (
-                    <div className={`mt-4 p-3 rounded-lg text-center font-bold ${
-                      result === "Correct!" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                    }`}>
+                    <div
+                      className={`mt-4 p-3 rounded-lg text-center font-bold ${
+                        result === "Correct!"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700"
+                      }`}
+                    >
                       {result}
                     </div>
                   )}
                 </div>
 
                 <div className="mt-4 text-center">
-                  <p className="font-medium">Score: {score} / {quizData.length}</p>
+                  <p className="font-medium">
+                    Score: {score} / {currentQuiz.length}
+                  </p>
                 </div>
               </>
             ) : (
               <div className="text-center">
                 <h2 className="text-xl font-bold mb-4">Quiz Complete!</h2>
-                <p className="text-lg mb-6">Your final score: {score} out of {quizData.length}</p>
+                <p className="text-lg mb-6">
+                  Your final score: {score} out of {currentQuiz.length}
+                </p>
                 <p className="text-md mb-8">
-                  {score === quizData.length ? "Perfect score! Amazing job!" : 
-                  score >= quizData.length * 0.7 ? "Great job!" : 
-                  score >= quizData.length * 0.5 ? "Good effort!" : 
-                  "Keep practicing!"}
+                  {score === currentQuiz.length
+                    ? "Perfect score! Amazing job!"
+                    : score >= currentQuiz.length * 0.7
+                      ? "Great job!"
+                      : score >= currentQuiz.length * 0.5
+                        ? "Good effort!"
+                        : "Keep practicing!"}
                 </p>
                 <button
                   onClick={restartQuiz}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg text-lg font-medium hover:bg-blue-700 transition duration-150"
+                  className="bg-blue-600 text-white px-6 py-3 rounded-lg text-lg font-medium hover:bg-blue-700 transition duration-150 mr-4"
                 >
                   Play Again
+                </button>
+                <button
+                  onClick={goHome}
+                  className="bg-gray-300 text-gray-800 px-6 py-3 rounded-lg text-lg font-medium hover:bg-gray-400 transition duration-150"
+                >
+                  Home
                 </button>
               </div>
             )}
@@ -165,7 +384,6 @@
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<PhonicsQuizApp />);
-
   </script>
 </body>
 </html>
