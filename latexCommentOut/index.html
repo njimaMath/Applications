@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LaTeX Comment Remover</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            resize: vertical;
+            margin-bottom: 10px;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #3367d6;
+        }
+        .options {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .option-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .option-row label {
+            margin-left: 8px;
+        }
+        h2 {
+            color: #555;
+            font-size: 1.2em;
+            margin-top: 0;
+        }
+        .status {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            margin-top: 10px;
+            min-height: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LaTeX Comment Remover</h1>
+        
+        <div class="options">
+            <h2>Options</h2>
+            <div class="option-row">
+                <input type="checkbox" id="removePercentComments" checked>
+                <label for="removePercentComments">Remove % comments (to end of line)</label>
+            </div>
+            <div class="option-row">
+                <input type="checkbox" id="removeIffalseFi" checked>
+                <label for="removeIffalseFi">Remove \iffalse ... \fi blocks</label>
+            </div>
+            <div class="option-row">
+                <input type="checkbox" id="preserveNewlines" checked>
+                <label for="preserveNewlines">Preserve empty lines (after comment removal)</label>
+            </div>
+        </div>
+        
+        <textarea id="inputText" placeholder="Paste your LaTeX text with comments here..."></textarea>
+        
+        <div class="buttons">
+            <button id="processBtn">Remove Comments</button>
+            <button id="clearBtn">Clear</button>
+            <button id="copyBtn">Copy Result</button>
+        </div>
+        
+        <textarea id="outputText" placeholder="Processed text will appear here..." readonly></textarea>
+        
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputText = document.getElementById('inputText');
+            const outputText = document.getElementById('outputText');
+            const processBtn = document.getElementById('processBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            const statusEl = document.getElementById('status');
+            const removePercentComments = document.getElementById('removePercentComments');
+            const removeIffalseFi = document.getElementById('removeIffalseFi');
+            const preserveNewlines = document.getElementById('preserveNewlines');
+            
+            // Process button click
+            processBtn.addEventListener('click', function() {
+                const input = inputText.value;
+                if (!input.trim()) {
+                    setStatus('Please enter some text to process.');
+                    return;
+                }
+                
+                let result = input;
+                
+                // Remove % comments if option is selected
+                if (removePercentComments.checked) {
+                    result = removePercentCommentsFunc(result);
+                }
+                
+                // Remove \iffalse ... \fi blocks if option is selected
+                if (removeIffalseFi.checked) {
+                    result = removeIffalseFiBlocks(result);
+                }
+                
+                // Clean up empty lines if not preserving them
+                if (!preserveNewlines.checked) {
+                    result = result.replace(/\n\s*\n/g, '\n');
+                }
+                
+                outputText.value = result;
+                setStatus('Comments removed successfully!');
+            });
+            
+            // Function to remove % comments (to end of line)
+            function removePercentCommentsFunc(text) {
+                // Split by newlines to process each line
+                const lines = text.split('\n');
+                
+                for (let i = 0; i < lines.length; i++) {
+                    // Find % that is not escaped (not preceded by \)
+                    const percentIndex = findUnescapedCharacter(lines[i], '%');
+                    
+                    if (percentIndex !== -1) {
+                        // Keep only text before the % character
+                        lines[i] = lines[i].substring(0, percentIndex);
+                    }
+                }
+                
+                return lines.join('\n');
+            }
+            
+            // Function to remove \iffalse ... \fi blocks
+            function removeIffalseFiBlocks(text) {
+                let result = text;
+                let startIndex = -1;
+                let nestedLevel = 0;
+                
+                // While there are \iffalse tokens in the text
+                while ((startIndex = result.indexOf('\\iffalse')) !== -1) {
+                    // Track nesting level
+                    nestedLevel = 1;
+                    
+                    // Find the matching \fi
+                    let endIndex = startIndex + 8; // Length of '\iffalse'
+                    
+                    while (nestedLevel > 0 && endIndex < result.length) {
+                        // Check for nested \iffalse
+                        const nestedIfIndex = result.indexOf('\\iffalse', endIndex);
+                        // Check for \fi
+                        const fiIndex = result.indexOf('\\fi', endIndex);
+                        
+                        // If no closing \fi found or end of text reached
+                        if (fiIndex === -1) {
+                            break;
+                        }
+                        
+                        // If we find a nested \iffalse before a \fi
+                        if (nestedIfIndex !== -1 && nestedIfIndex < fiIndex) {
+                            nestedLevel++;
+                            endIndex = nestedIfIndex + 8;
+                        } else {
+                            // Found a \fi
+                            nestedLevel--;
+                            endIndex = fiIndex + 3; // Length of '\fi'
+                        }
+                    }
+                    
+                    // Remove the \iffalse...\fi block if properly closed
+                    if (nestedLevel === 0) {
+                        result = result.substring(0, startIndex) + result.substring(endIndex);
+                    } else {
+                        // If not properly closed, just remove the \iffalse token and continue
+                        result = result.substring(0, startIndex) + result.substring(startIndex + 8);
+                    }
+                }
+                
+                return result;
+            }
+            
+            // Function to find unescaped character (not preceded by \)
+            function findUnescapedCharacter(text, char) {
+                for (let i = 0; i < text.length; i++) {
+                    if (text[i] === char) {
+                        // Check if it's escaped
+                        if (i > 0 && text[i-1] === '\\') {
+                            // Count number of consecutive backslashes
+                            let backslashCount = 0;
+                            let j = i - 1;
+                            while (j >= 0 && text[j] === '\\') {
+                                backslashCount++;
+                                j--;
+                            }
+                            // If odd number of backslashes, it's escaped
+                            if (backslashCount % 2 === 1) {
+                                continue;
+                            }
+                        }
+                        return i;
+                    }
+                }
+                return -1;
+            }
+            
+            // Clear button click
+            clearBtn.addEventListener('click', function() {
+                inputText.value = '';
+                outputText.value = '';
+                setStatus('');
+            });
+            
+            // Copy button click
+            copyBtn.addEventListener('click', function() {
+                if (!outputText.value.trim()) {
+                    setStatus('There is no processed text to copy.');
+                    return;
+                }
+                
+                outputText.select();
+                document.execCommand('copy');
+                setStatus('Copied to clipboard!');
+                
+                // Deselect the text
+                window.getSelection().removeAllRanges();
+            });
+            
+            // Set status message with auto-clear
+            function setStatus(message) {
+                statusEl.textContent = message;
+                
+                if (message) {
+                    setTimeout(() => {
+                        statusEl.textContent = '';
+                    }, 3000);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
