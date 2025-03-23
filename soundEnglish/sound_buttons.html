@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Phonics Quiz</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- React and ReactDOM from CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- JSX Script -->
+  <script type="text/babel">
+
+    const { useState, useEffect } = React;
+
+    const PhonicsQuizApp = () => {
+      const quizData = [
+        { words: ['mouth', 'mouse'], sound: 'mouth' },
+        { words: ['house', 'horse'], sound: 'horse' },
+        { words: ['three', 'tree'], sound: 'three' },
+        { words: ['ship', 'sheep'], sound: 'sheep' },
+        { words: ['thin', 'fin'], sound: 'thin' },
+        { words: ['bath', 'bat'], sound: 'bath' },
+        { words: ['thought', 'taught'], sound: 'thought' },
+        { words: ['sink', 'think'], sound: 'think' },
+        { words: ['thumb', 'sum'], sound: 'thumb' },
+        { words: ['path', 'pass'], sound: 'path' }
+      ];
+
+      const [currentQuestion, setCurrentQuestion] = useState(0);
+      const [selectedAnswer, setSelectedAnswer] = useState(null);
+      const [result, setResult] = useState(null);
+      const [score, setScore] = useState(0);
+      const [gameOver, setGameOver] = useState(false);
+
+      const speakWord = (word) => {
+        const speech = new SpeechSynthesisUtterance(word);
+        speech.rate = 0.8;
+        window.speechSynthesis.speak(speech);
+      };
+
+      const handleAnswerSelect = (answer) => {
+        setSelectedAnswer(answer);
+        const currentSound = quizData[currentQuestion].sound;
+        const isCorrect = answer === currentSound;
+        setResult(isCorrect ? "Correct!" : "Wrong!");
+        if (isCorrect) setScore(score + 1);
+
+        setTimeout(() => {
+          if (currentQuestion < quizData.length - 1) {
+            setCurrentQuestion(currentQuestion + 1);
+            setSelectedAnswer(null);
+            setResult(null);
+          } else {
+            setGameOver(true);
+          }
+        }, 1500);
+      };
+
+      useEffect(() => {
+        if (!gameOver) {
+          const timer = setTimeout(() => {
+            speakWord(quizData[currentQuestion].sound);
+          }, 500);
+          return () => clearTimeout(timer);
+        }
+      }, [currentQuestion, gameOver]);
+
+      const restartQuiz = () => {
+        setCurrentQuestion(0);
+        setSelectedAnswer(null);
+        setResult(null);
+        setScore(0);
+        setGameOver(false);
+      };
+
+      const playAgain = () => {
+        speakWord(quizData[currentQuestion].sound);
+      };
+
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+          <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
+            <h1 className="text-2xl font-bold text-center mb-6">Phonics Quiz</h1>
+
+            {!gameOver ? (
+              <>
+                <div className="mb-8">
+                  <p className="text-lg text-center mb-2">Question {currentQuestion + 1} of {quizData.length}</p>
+                  <p className="text-sm text-center text-gray-600 mb-4">Listen to the sound and choose the correct word</p>
+
+                  <div className="flex justify-center mb-4">
+                    <button 
+                      onClick={playAgain}
+                      className="bg-blue-100 text-blue-600 px-4 py-2 rounded-full flex items-center justify-center hover:bg-blue-200"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                      </svg>
+                      Play Sound Again
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    {quizData[currentQuestion].words.map((word, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleAnswerSelect(word)}
+                        disabled={selectedAnswer !== null}
+                        className={`text-lg font-medium py-3 px-4 rounded-lg transition duration-150 ${
+                          selectedAnswer === word 
+                            ? word === quizData[currentQuestion].sound 
+                              ? 'bg-green-100 text-green-700 border-2 border-green-500' 
+                              : 'bg-red-100 text-red-700 border-2 border-red-500'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+                        }`}
+                      >
+                        {word}
+                      </button>
+                    ))}
+                  </div>
+
+                  {result && (
+                    <div className={`mt-4 p-3 rounded-lg text-center font-bold ${
+                      result === "Correct!" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                    }`}>
+                      {result}
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4 text-center">
+                  <p className="font-medium">Score: {score} / {quizData.length}</p>
+                </div>
+              </>
+            ) : (
+              <div className="text-center">
+                <h2 className="text-xl font-bold mb-4">Quiz Complete!</h2>
+                <p className="text-lg mb-6">Your final score: {score} out of {quizData.length}</p>
+                <p className="text-md mb-8">
+                  {score === quizData.length ? "Perfect score! Amazing job!" : 
+                  score >= quizData.length * 0.7 ? "Great job!" : 
+                  score >= quizData.length * 0.5 ? "Good effort!" : 
+                  "Keep practicing!"}
+                </p>
+                <button
+                  onClick={restartQuiz}
+                  className="bg-blue-600 text-white px-6 py-3 rounded-lg text-lg font-medium hover:bg-blue-700 transition duration-150"
+                >
+                  Play Again
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<PhonicsQuizApp />);
+
+  </script>
+</body>
+</html>
