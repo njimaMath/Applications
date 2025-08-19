@@ -1,0 +1,455 @@
+1. I won't send a book.  
+   I want to send a book.
+
+2. He is here.  
+   He isn't here.
+
+3. We are late.  
+   We aren't late.
+
+4. You can make it.  
+   You can't make it.
+
+5. We're going to win.  
+   Were going to win.
+
+6. We are lost.  
+   We aren't lost.
+
+7. It is too late.  
+   It is to late.
+
+8. They're my friends.  
+   Their my friends.
+
+9. You're absolutely right.  
+   Your absolutely right.
+
+10. He is taller than me.  
+    He is taller then me.
+
+11. I always lose my socks.  
+    I always loose my socks.
+
+12. I can't decide whether to go.  
+    I can't decide weather to go.
+
+13. I can hear the music.  
+    I can here the music.
+
+14. Our principal is very strict.  
+    Our principle is very strict.
+
+15. I accept your offer.  
+    I except your offer.
+
+16. This change will affect our plans.  
+    This change will effect our plans.
+
+17. Please advise me on this.  
+    Please advice me on this.
+
+18. I want some dessert.  
+    I want some desert.
+
+19. We visited the site of the battle.  
+    We visited the sight of the battle.
+
+20. Who's coming to the party?  
+    Whose coming to the party?
+
+21. The car needs new brakes.  
+    The car needs new breaks.
+
+22. Where did he go?  
+    Wear did he go?
+
+23. Give me a piece of cake.  
+    Give me a peace of cake.
+
+24. Please write your name here.  
+    Please right your name here.
+
+25. I knew you would come.  
+    I new you would come.
+
+26. Take a deep breath.  
+    Take a deep breathe.
+
+27. I hate math.  
+    I hate Mass.
+
+28. The hike was hard, but it was worth it.  
+    The hike was hard, but it was worse it.
+
+29. He has three dogs.  
+    He has tree dogs.
+
+30. I think so.  
+    I sink so.
+
+31. The cat has a small mouth.  
+    The cat has a small mouse.
+
+32. The path is clear.  
+    The pass is clear.
+
+33. Look at that ship.  
+    Look at that sheep.
+
+34. She wants to live here.  
+    She wants to leave here.
+
+35. He stepped on the glass.  
+    He stepped on the grass.
+
+36. The kids love to play outside.  
+    The kids love to pray outside.
+
+37. He tried to collect the papers.  
+    He tried to correct the papers.
+
+38. That doesn't feel light.  
+    That doesn't feel right.
+
+39. We saw the van coming.  
+    We saw the ban coming.
+
+40. Look at the cloud.  
+    Look at the crowd.
+
+41. The plant glows at night.  
+    The plant grows at night.
+
+42. Use the lock to keep the door closed.  
+    Use the rock to keep the door closed.
+
+43. He lost his cap.  
+    He lost his cup.
+
+44. The baby sleeps in a cot.  
+    The baby sleeps in a coat.
+
+45. He packed the car.  
+    He parked the car.
+
+46. He has a fan in his room.  
+    He has a van in his room.
+
+47. He beat her on stage in the play.  
+    He bit her on stage in the play.
+
+48. He felt full after dinner.  
+    He felt like a fool after dinner.
+
+49. Let's pool our money for the gift.  
+    Let's pull our money for the gift.
+
+50. I'm going to bet on that horse.  
+    I'm going to vet that horse.
+
+51. He took a bow after his performance.  
+    He took a vow after his performance.
+
+52. He broke the vase.  
+    He broke the base.
+
+53. The car needs new brakes.  
+    The car needs new breaks.
+
+54. He dropped the ball.  
+    He dropped the bowl.
+
+55. He blew out the candle.  
+    He blue out the candle.
+
+56. He threw the ball.  
+    He through the ball.
+
+57. He led the team to victory.  
+    He lead the team to victory.
+
+58. Take off your shoes.  
+    Take of your shoes.
+
+59. He read the poem aloud.  
+    He read the poem allowed.
+
+60. I have two cats.  
+    I have to cats.
+
+61. This costs four dollars.  
+    This costs for dollars.
+
+62. The wine complements the meal.  
+    The wine compliments the meal.
+
+63. His patience was tested.  
+    His patients were tested.
+
+64. The company has good personnel.  
+    The company has good personal.
+
+65. She is quite right.  
+    She is quiet right.
+
+66. This sand is coarse.  
+    This sand is course.
+
+67. It's an everyday occurrence.  
+    It's an every day occurrence.
+
+68. He fought with his bare hands.  
+    He fought with his bear hands.
+
+69. He found a cache of jewels.  
+    He found a cash of jewels.
+
+70. He fired the cannon.  
+    He fired the canon.
+
+71. He chose the red one.  
+    He choose the red one.
+
+72. Of the two choices, he preferred the latter.  
+    Of the two choices, he preferred the later.
+
+73. My bike is stationary.  
+    My bike is stationery.
+
+74. The sky was lit up by lightning.  
+    The sky was lit up by lightening.
+
+75. He pedals his bike to work.  
+    He peddles his bike to work.
+
+76. She peeked at the present.  
+    She peaked at the present.
+
+77. She pored over the documents.  
+    She poured over the documents.
+
+78. There is a problem.  
+    Their is a problem.
+
+79. He struck a chord with the audience.  
+    He struck a cord with the audience.
+
+80. He started to bawl loudly.  
+    He started to ball loudly.
+
+81. My dear friend came to visit.  
+    My deer friend came to visit.
+
+82. She will dye her hair.  
+    She will die her hair.
+
+83. Homework is due tomorrow.  
+    Homework is do tomorrow.
+
+84. He wants to ensure it's done.  
+    He wants to insure it's done.
+
+85. The bus fare is expensive.  
+    The bus fair is expensive.
+
+86. She went straight home.  
+    She went strait home.
+
+87. She is an angel for helping.  
+    She is an angle for helping.
+
+88. He agreed to a duel.  
+    He agreed to a dual.
+
+89. Add flour to the mixture.  
+    Add flower to the mixture.
+
+90. The horse had a long mane.  
+    The horse had a long main.
+
+91. She looks pale.  
+    She looks pail.
+
+92. He walked past me.  
+    He walked passed me.
+
+93. Take a peek at this.  
+    Take a peak at this.
+
+94. Shoo the flies away.  
+    Shoe the flies away.
+
+95. She bought new stationery.  
+    She bought new stationary.
+
+96. They erected a statue in the park.  
+    They erected a statute in the park.
+
+97. This is a core tenet of his belief.  
+    This is a core tenant of his belief.
+
+98. Would you help me?  
+    Wood you help me?
+
+99. He cannot bear this pain.  
+    He cannot bare this pain.
+
+100. She has a flair for design.  
+     She has a flare for design.
+
+101. Knead the dough thoroughly.  
+     Need the dough thoroughly.
+
+102. He waived his rights.  
+     He waved his rights.
+
+103. Many women were present.  
+     Many woman were present.
+
+104. She has a bright idea.  
+     She has a brite idea.
+
+105. He likes to sing songs.  
+     He likes to sink songs.
+
+106. The dogs are in the pen.  
+     The dogs are in the pan.
+
+107. I have access to the files.  
+     I have excess to the files.
+
+108. He was standing by the door.  
+     He was standing buy the door.
+
+109. The danger is imminent.  
+     The danger is eminent.
+
+110. The cat ate its food.  
+     The cat ate it's food.
+
+111. Maybe he will come.  
+     May be he will come.
+
+112. She adopted a child.  
+     She adapted a child.
+
+113. He alluded to the problem.  
+     He eluded to the problem.
+
+114. He apprised me of the situation.  
+     He appraised me of the situation.
+
+115. They gave their assent to the plan.  
+     They gave their ascent to the plan.
+
+116. He cited a famous study.  
+     He sited a famous study.
+
+117. The city council meets today.  
+     The city counsel meets today.
+
+118. Please be discreet about this.  
+     Please be discrete about this.
+
+119. These drugs are illicit.  
+     These drugs are elicit.
+
+120. She's going to college.  
+     She's going to collage.
+
+121. He was formerly a chef.  
+     He was formally a chef.
+
+122. He was attacked by a guerrilla.  
+     He was attacked by a gorilla.
+
+123. The team's morale was high.  
+     The team's moral was high.
+
+124. My diary is on the desk.  
+     My dairy is on the desk.
+
+125. From my perspective, this is true.  
+     Form my perspective, this is true.
+
+126. The hiking trail is long.  
+     The hiking trial is long.
+
+127. His behavior was decent.  
+     His behavior was descent.
+
+128. She is the dominant partner.  
+     She is the dominate partner.
+
+129. He tried to exorcise the demon.  
+     He tried to exercise the demon.
+
+130. He ate the whole pie.  
+     He ate the hole pie.
+
+131. The premise of the story is interesting.  
+     The premises of the story is interesting.
+
+132. The new residents were friendly.  
+     The new residence were friendly.
+
+133. He addressed the audience respectfully.  
+     He addressed the audience respectively.
+
+134. He drove a stake into the ground.  
+     He drove a steak into the ground.
+
+135. He took it apart.  
+     He took it a part.
+
+136. He used to live here.  
+     He use to live here.
+
+137. You are supposed to finish it.  
+     You are suppose to finish it.
+
+138. He could have saved her.  
+     He could of saved her.
+
+139. He barely passed the test.  
+     He barley passed the test.
+
+140. He found rice in her hair.  
+     He found lice in her hair.
+
+141. We are going now.  
+     We aren't going now.
+
+142. Isn't he nice?  
+     Is he nice?
+
+143. She won't do that.  
+     She want do that.
+
+144. That isn't tall.  
+     That's tall.
+
+145. He changed the world.  
+     He changed the word.
+
+146. The country is small.  
+     The county is small.
+
+147. She quit her job.  
+     She quiet her job.
+
+148. He picked up the pen.  
+     He picked up the pin.
+
+149. He bought a pear at the market.  
+     He bought a bear at the market.
+
+150. The dog is barking.  
+     The dog is parking.
+
+151. He called a cab for us.  
+     He called a cap for us.
+
+152. Can you swim?  
+     Can't you swim?
