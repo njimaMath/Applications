@@ -156,38 +156,29 @@
                 setStatus('Comments removed successfully!');
             });
             
-// Function to remove % comments (to end of line)
+            // Function to remove % comments (to end of line)
+            function removePercentCommentsFunc(text) {
+                const lines = text.split('\n');
+                const processedLines = [];
 
-function removePercentCommentsFunc(text) {
-    const lines = text.split('\n');
-    const processedLines = [];
+                for (let line of lines) {
+                    const percentIndex = findUnescapedCharacter(line, '%');
+                    if (percentIndex !== -1) {
+                        // Remove everything from % onward
+                        line = line.substring(0, percentIndex);
+                    }
+                    // Trim trailing spaces
+                    line = line.trimEnd();
 
-    for (let line of lines) {
-        const percentIndex = findUnescapedCharacter(line, '%');
-        if (percentIndex !== -1) {
-            // Remove everything from % onward
-            line = line.substring(0, percentIndex);
-        }
-        // Trim trailing spaces (but do NOT push empty lines if they are comment-only).
-        // If you want to preserve indentation on non-blank lines, you can do line.replace(/\s+$/, '') instead.
-        line = line.trimEnd();
+                    // Always push the line, even if it's empty
+                    processedLines.push(line);
+                }
 
-        if (line.trim() === '') {
-            // This was pure comment or blank, so skip it altogether
-            // unless you specifically want to keep blank lines no matter what,
-            // in which case push("") only if it's not purely a comment line.
-            continue;
-        }
+                // Join back
+                return processedLines.join('\n');
+            }
 
-        // Otherwise, the line had text => push it
-        processedLines.push(line);
-    }
-
-    // Join back
-    return processedLines.join('\n');
-}
-
-// Function to remove \iffalse ... \fi blocks
+            // Function to remove \iffalse ... \fi blocks
             function removeIffalseFiBlocks(text) {
                 let result = text;
                 let startIndex = -1;
