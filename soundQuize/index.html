@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>English Sound Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b1020;
+    --card: #121a33;
+    --ink: #e6ecff;
+    --muted: #9fb0ffcc;
+    --accent: #6aa1ff;
+    --ok: #22c55e;
+    --bad: #ef4444;
+    --warn: #f59e0b;
+    --chip: #1a2547;
+    --chip-ink: #bcd1ff;
+  }
+  * { box-sizing: border-box }
+  html, body { height: 100% }
+  body {
+    margin: 0;
+    background: radial-gradient(1200px 800px at 70% -10%, #1a2b56 0%, #0b1020 60%) fixed;
+    color: var(--ink);
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+  }
+  .wrap { max-width: 1000px; margin: 24px auto 56px; padding: 0 20px }
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; margin-bottom: 18px;
+  }
+  h1 { margin: 0; font-size: 24px; letter-spacing: .2px }
+  .controls {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .chip {
+    background: var(--chip); color: var(--chip-ink);
+    padding: 6px 10px; border-radius: 999px; font-size: 12px;
+  }
+  .panel {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(160,180,255,0.15);
+    border-radius: 14px; padding: 14px 14px;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .panel label { font-size: 12px; color: var(--muted) }
+  .panel input[type="range"] { width: 140px }
+  .btn {
+    border: 1px solid rgba(160,180,255,0.25);
+    background: linear-gradient(180deg, #1a2447, #131e3f);
+    color: var(--ink);
+    border-radius: 10px; padding: 10px 14px; font-weight: 600;
+    cursor: pointer; transition: transform .06s ease, filter .15s ease, border-color .2s ease;
+    user-select: none;
+  }
+  .btn:hover { filter: brightness(1.08) }
+  .btn:active { transform: translateY(1px) }
+  .btn.primary {
+    background: linear-gradient(180deg, #2b67ff, #1f47c9);
+    border-color: transparent;
+  }
+  .btn.ghost {
+    background: transparent;
+    border-color: rgba(160,180,255,0.2);
+  }
+  .grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr));
+    gap: 14px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid rgba(160,180,255,0.12);
+    border-radius: 16px; padding: 14px;
+  }
+  .card h3 { margin: 0 0 8px; font-size: 14px; color: var(--muted); font-weight: 600 }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center }
+  .play {
+    border-radius: 10px; padding: 8px 10px;
+    background: #182653; border: 1px solid rgba(160,180,255,0.2);
+    font-weight: 600; cursor: pointer; color: var(--ink);
+  }
+  .options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px }
+  .opt {
+    padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(160,180,255,0.25);
+    background: #0f1731; color: var(--ink); cursor: pointer; font-weight: 700;
+  }
+  .opt.selected { border-color: rgba(160,180,255,0.45) }
+  .opt.correct { outline: 2px solid var(--ok); background: #0f2a1c }
+  .opt.wrong { outline: 2px solid var(--bad); background: #2a1416 }
+  .msg { margin-top: 8px; font-size: 13px; min-height: 18px }
+  .msg.ok { color: var(--ok) }
+  .msg.bad { color: var(--bad) }
+  .nav { margin-top: 16px; display: flex; gap: 10px; justify-content: space-between; align-items: center; flex-wrap: wrap }
+  .score {
+    padding: 10px 12px; border-radius: 10px; background: #122044; border: 1px solid rgba(160,180,255,0.2);
+    font-weight: 700;
+  }
+  .sets { display: flex; flex-wrap: wrap; gap: 10px }
+  .hint { color: var(--muted); font-size: 12px }
+  .footer { margin-top: 26px; color: var(--muted); font-size: 12px }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>English Sound Quiz</h1>
+      <div class="controls">
+        <span class="chip" id="setInfo">—</span>
+        <button class="btn ghost" id="homeBtn" aria-label="Home">Home</button>
+        <button class="btn primary" id="newSetBtn" aria-label="New random set">New Random Set</button>
+      </div>
+    </header>
+
+    <section class="panel" aria-label="Audio settings">
+      <label>Rate
+        <input type="range" min="0.7" max="1.3" step="0.05" value="1.0" id="rateCtl" />
+      </label>
+      <label>Pitch
+        <input type="range" min="0.8" max="1.2" step="0.05" value="1.0" id="pitchCtl" />
+      </label>
+      <label>
+        <input type="checkbox" id="autoplayCtl" />
+        Autoplay when revealed
+      </label>
+      <span class="hint">Allow audio in your browser. Uses SpeechSynthesis.</span>
+    </section>
+
+    <main id="app"></main>
+
+    <div class="footer">
+      Built in one file. Randomized 10-question sets. Two near-homophone options per item. Speech: en-US.
+    </div>
+  </div>
+
+<script>
+/*
+ * Sound Quiz Application
+ * Single-file HTML app. Random 10-question sets drawn without replacement.
+ * Each item speaks via the Web Speech API. Two options. Immediate feedback.
+ */
+
+(() => {
+  const SET_SIZE = 10;
+
+  // Full question bank
+  const quizData = [
+    {sentence: "I won't send a book.", options: ["won't", "want"], correctIndex: 0},
+    {sentence: "He is here.", options: ["is", "isn't"], correctIndex: 0},
+    {sentence: "We are late.", options: ["are", "aren't"], correctIndex: 0},
+    {sentence: "You can make it.", options: ["can", "can't"], correctIndex: 0},
+    {sentence: "We're going to win.", options: ["We're", "Were"], correctIndex: 0},
+    {sentence: "We are lost.", options: ["are", "aren't"], correctIndex: 0},
+    {sentence: "It is too late.", options: ["too", "to"], correctIndex: 0},
+    {sentence: "They're my friends.", options: ["They're", "Their"], correctIndex: 0},
+    {sentence: "You're absolutely right.", options: ["You're", "Your"], correctIndex: 0},
+    {sentence: "He is taller than me.", options: ["than", "then"], correctIndex: 0},
+    {sentence: "I always lose my socks.", options: ["lose", "loose"], correctIndex: 0},
+    {sentence: "I can't decide whether to go.", options: ["whether", "weather"], correctIndex: 0},
+    {sentence: "I can hear the music.", options: ["hear", "here"], correctIndex: 0},
+    {sentence: "Our principal is very strict.", options: ["principal", "principle"], correctIndex: 0},
+    {sentence: "I accept your offer.", options: ["accept", "except"], correctIndex: 0},
+    {sentence: "This change will affect our plans.", options: ["affect", "effect"], correctIndex: 0},
+    {sentence: "Please advise me on this.", options: ["advise", "advice"], correctIndex: 0},
+    {sentence: "I want some dessert.", options: ["dessert", "desert"], correctIndex: 0},
+    {sentence: "We visited the site of the battle.", options: ["site", "sight"], correctIndex: 0},
+    {sentence: "Who's coming to the party?", options: ["Who's", "Whose"], correctIndex: 0},
+    {sentence: "The car needs new brakes.", options: ["brakes", "breaks"], correctIndex: 0},
+    {sentence: "Where did he go?", options: ["Where", "Wear"], correctIndex: 0},
+    {sentence: "Give me a piece of cake.", options: ["piece", "peace"], correctIndex: 0},
+    {sentence: "Please write your name here.", options: ["write", "right"], correctIndex: 0},
+    {sentence: "I knew you would come.", options: ["knew", "new"], correctIndex: 0},
+    {sentence: "Take a deep breath.", options: ["breath", "breathe"], correctIndex: 0},
+    {sentence: "I hate math.", options: ["math", "Mass"], correctIndex: 0},
+    {sentence: "The hike was hard, but it was worth it.", options: ["worth", "worse"], correctIndex: 0},
+    {sentence: "He has three dogs.", options: ["three", "tree"], correctIndex: 0},
+    {sentence: "I think so.", options: ["think", "sink"], correctIndex: 0},
+    {sentence: "The cat has a small mouth.", options: ["mouth", "mouse"], correctIndex: 0},
+    {sentence: "The path is clear.", options: ["path", "pass"], correctIndex: 0},
+    {sentence: "Look at that ship.", options: ["ship", "sheep"], correctIndex: 0},
+    {sentence: "She wants to live here.", options: ["live", "leave"], correctIndex: 0},
+    {sentence: "He stepped on the glass.", options: ["glass", "grass"], correctIndex: 0},
+    {sentence: "The kids love to play outside.", options: ["play", "pray"], correctIndex: 0},
+    {sentence: "He tried to collect the papers.", options: ["collect", "correct"], correctIndex: 0},
+    {sentence: "That doesn't feel light.", options: ["light", "right"], correctIndex: 0},
+    {sentence: "We saw the van coming.", options: ["van", "ban"], correctIndex: 0},
+    {sentence: "Look at the cloud.", options: ["cloud", "crowd"], correctIndex: 0},
+    {sentence: "The plant glows at night.", options: ["glows", "grows"], correctIndex: 0},
+    {sentence: "Use the lock to keep the door closed.", options: ["lock", "rock"], correctIndex: 0},
+    {sentence: "He lost his cap.", options: ["cap", "cup"], correctIndex: 0},
+    {sentence: "The baby sleeps in a cot.", options: ["cot", "coat"], correctIndex: 0},
+    {sentence: "He packed the car.", options: ["packed", "parked"], correctIndex: 0},
+    {sentence: "He has a fan in his room.", options: ["fan", "van"], correctIndex: 0},
+    {sentence: "He beat her on stage in the play.", options: ["beat", "bit"], correctIndex: 0},
+    {sentence: "He felt full after dinner.", options: ["full", "fool"], correctIndex: 0},
+    {sentence: "Let's pool our money for the gift.", options: ["pool", "pull"], correctIndex: 0},
+    {sentence: "I'm going to bet on that horse.", options: ["bet", "vet"], correctIndex: 0},
+    {sentence: "He took a bow after his performance.", options: ["bow", "vow"], correctIndex: 0},
+    {sentence: "He broke the vase.", options: ["vase", "base"], correctIndex: 0},
+    {sentence: "The car needs new brakes.", options: ["brakes", "breaks"], correctIndex: 0},
+    {sentence: "He dropped the ball.", options: ["ball", "bowl"], correctIndex: 0},
+    {sentence: "He blew out the candle.", options: ["blew", "blue"], correctIndex: 0},
+    {sentence: "He threw the ball.", options: ["threw", "through"], correctIndex: 0},
+    {sentence: "He led the team to victory.", options: ["led", "lead"], correctIndex: 0},
+    {sentence: "Take off your shoes.", options: ["off", "of"], correctIndex: 0},
+    {sentence: "He read the poem aloud.", options: ["aloud", "allowed"], correctIndex: 0},
+    {sentence: "I have two cats.", options: ["two", "to"], correctIndex: 0},
+    {sentence: "This costs four dollars.", options: ["four", "for"], correctIndex: 0},
+    {sentence: "The wine complements the meal.", options: ["complements", "compliments"], correctIndex: 0},
+    {sentence: "His patience was tested.", options: ["patience", "patients"], correctIndex: 0},
+    {sentence: "The company has good personnel.", options: ["personnel", "personal"], correctIndex: 0},
+    {sentence: "She is quite right.", options: ["quite", "quiet"], correctIndex: 0},
+    {sentence: "This sand is coarse.", options: ["coarse", "course"], correctIndex: 0},
+    {sentence: "It's an everyday occurrence.", options: ["everyday", "every day"], correctIndex: 0},
+    {sentence: "He fought with his bare hands.", options: ["bare", "bear"], correctIndex: 0},
+    {sentence: "He found a cache of jewels.", options: ["cache", "cash"], correctIndex: 0},
+    {sentence: "He fired the cannon.", options: ["cannon", "canon"], correctIndex: 0},
+    {sentence: "He chose the red one.", options: ["chose", "choose"], correctIndex: 0},
+    {sentence: "Of the two choices, he preferred the latter.", options: ["latter", "later"], correctIndex: 0},
+    {sentence: "My bike is stationary.", options: ["stationary", "stationery"], correctIndex: 0},
+    {sentence: "The sky was lit up by lightning.", options: ["lightning", "lightening"], correctIndex: 0},
+    {sentence: "He pedals his bike to work.", options: ["pedals", "peddles"], correctIndex: 0},
+    {sentence: "She peeked at the present.", options: ["peeked", "peaked"], correctIndex: 0},
+    {sentence: "She pored over the documents.", options: ["pored", "poured"], correctIndex: 0},
+    {sentence: "There is a problem.", options: ["There", "Their"], correctIndex: 0},
+    {sentence: "He struck a chord with the audience.", options: ["chord", "cord"], correctIndex: 0},
+    {sentence: "He started to bawl loudly.", options: ["bawl", "ball"], correctIndex: 0},
+    {sentence: "My dear friend came to visit.", options: ["dear", "deer"], correctIndex: 0},
+    {sentence: "She will dye her hair.", options: ["dye", "die"], correctIndex: 0},
+    {sentence: "Homework is due tomorrow.", options: ["due", "do"], correctIndex: 0},
+    {sentence: "He wants to ensure it's done.", options: ["ensure", "insure"], correctIndex: 0},
+    {sentence: "The bus fare is expensive.", options: ["fare", "fair"], correctIndex: 0},
+    {sentence: "She went straight home.", options: ["straight", "strait"], correctIndex: 0},
+    {sentence: "She is an angel for helping.", options: ["angel", "angle"], correctIndex: 0},
+    {sentence: "He agreed to a duel.", options: ["duel", "dual"], correctIndex: 0},
+    {sentence: "Add flour to the mixture.", options: ["flour", "flower"], correctIndex: 0},
+    {sentence: "The horse had a long mane.", options: ["mane", "main"], correctIndex: 0},
+    {sentence: "She looks pale.", options: ["pale", "pail"], correctIndex: 0},
+    {sentence: "He walked past me.", options: ["past", "passed"], correctIndex: 0},
+    {sentence: "Take a peek at this.", options: ["peek", "peak"], correctIndex: 0},
+    {sentence: "Shoo the flies away.", options: ["Shoo", "Shoe"], correctIndex: 0},
+    {sentence: "She bought new stationery.", options: ["stationery", "stationary"], correctIndex: 0},
+    {sentence: "They erected a statue in the park.", options: ["statue", "statute"], correctIndex: 0},
+    {sentence: "This is a core tenet of his belief.", options: ["tenet", "tenant"], correctIndex: 0},
+    {sentence: "Would you help me?", options: ["Would", "Wood"], correctIndex: 0},
+    {sentence: "He cannot bear this pain.", options: ["bear", "bare"], correctIndex: 0},
+    {sentence: "She has a flair for design.", options: ["flair", "flare"], correctIndex: 0},
+    {sentence: "Knead the dough thoroughly.", options: ["Knead", "Need"], correctIndex: 0},
+    {sentence: "He waived his rights.", options: ["waived", "waved"], correctIndex: 0},
+    {sentence: "Many women were present.", options: ["women", "woman"], correctIndex: 0},
+    {sentence: "She has a bright idea.", options: ["bright", "brite"], correctIndex: 0},
+    {sentence: "He likes to sing songs.", options: ["sing", "sink"], correctIndex: 0},
+    {sentence: "The dogs are in the pen.", options: ["pen", "pan"], correctIndex: 0},
+    {sentence: "I have access to the files.", options: ["access", "excess"], correctIndex: 0},
+    {sentence: "He was standing by the door.", options: ["by", "buy"], correctIndex: 0},
+    {sentence: "The danger is imminent.", options: ["imminent", "eminent"], correctIndex: 0},
+    {sentence: "The cat ate its food.", options: ["its", "it's"], correctIndex: 0},
+    {sentence: "Maybe he will come.", options: ["Maybe", "May"], correctIndex: 0},
+    {sentence: "She adopted a child.", options: ["adopted", "adapted"], correctIndex: 0},
+    {sentence: "He alluded to the problem.", options: ["alluded", "eluded"], correctIndex: 0},
+    {sentence: "He apprised me of the situation.", options: ["apprised", "appraised"], correctIndex: 0},
+    {sentence: "They gave their assent to the plan.", options: ["assent", "ascent"], correctIndex: 0},
+    {sentence: "He cited a famous study.", options: ["cited", "sited"], correctIndex: 0},
+    {sentence: "The city council meets today.", options: ["council", "counsel"], correctIndex: 0},
+    {sentence: "Please be discreet about this.", options: ["discreet", "discrete"], correctIndex: 0},
+    {sentence: "These drugs are illicit.", options: ["illicit", "elicit"], correctIndex: 0},
+    {sentence: "She's going to college.", options: ["college", "collage"], correctIndex: 0},
+    {sentence: "He was formerly a chef.", options: ["formerly", "formally"], correctIndex: 0},
+    {sentence: "He was attacked by a guerrilla.", options: ["guerrilla", "gorilla"], correctIndex: 0},
+    {sentence: "The team's morale was high.", options: ["morale", "moral"], correctIndex: 0},
+    {sentence: "My diary is on the desk.", options: ["diary", "dairy"], correctIndex: 0},
+    {sentence: "From my perspective, this is true.", options: ["From", "Form"], correctIndex: 0},
+    {sentence: "The hiking trail is long.", options: ["trail", "trial"], correctIndex: 0},
+    {sentence: "His behavior was decent.", options: ["decent", "descent"], correctIndex: 0},
+    {sentence: "She is the dominant partner.", options: ["dominant", "dominate"], correctIndex: 0},
+    {sentence: "He tried to exorcise the demon.", options: ["exorcise", "exercise"], correctIndex: 0},
+    {sentence: "He ate the whole pie.", options: ["whole", "hole"], correctIndex: 0},
+    {sentence: "The premise of the story is interesting.", options: ["premise", "premises"], correctIndex: 0},
+    {sentence: "The new residents were friendly.", options: ["residents", "residence"], correctIndex: 0},
+    {sentence: "He addressed the audience respectfully.", options: ["respectfully", "respectively"], correctIndex: 0},
+    {sentence: "He drove a stake into the ground.", options: ["stake", "steak"], correctIndex: 0},
+    {sentence: "He took it apart.", options: ["apart", "a part"], correctIndex: 0},
+    {sentence: "He used to live here.", options: ["used", "use"], correctIndex: 0},
+    {sentence: "You are supposed to finish it.", options: ["supposed", "suppose"], correctIndex: 0},
+    {sentence: "He could have saved her.", options: ["have", "of"], correctIndex: 0},
+    {sentence: "He barely passed the test.", options: ["barely", "barley"], correctIndex: 0},
+    {sentence: "He found rice in her hair.", options: ["rice", "lice"], correctIndex: 0},
+    {sentence: "We are going now.", options: ["are", "aren't"], correctIndex: 0},
+    {sentence: "Isn't he nice?", options: ["Isn't", "Is"], correctIndex: 0},
+    {sentence: "She won't do that.", options: ["won't", "want"], correctIndex: 0},
+    {sentence: "That isn't tall.", options: ["That", "That's"], correctIndex: 0},
+    {sentence: "He changed the world.", options: ["world", "word"], correctIndex: 0},
+    {sentence: "The country is small.", options: ["country", "county"], correctIndex: 0},
+    {sentence: "She quit her job.", options: ["quit", "quiet"], correctIndex: 0},
+    {sentence: "He picked up the pen.", options: ["pen", "pin"], correctIndex: 0},
+    {sentence: "He bought a pear at the market.", options: ["pear", "bear"], correctIndex: 0},
+    {sentence: "The dog is barking.", options: ["barking", "parking"], correctIndex: 0},
+    {sentence: "He called a cab for us.", options: ["cab", "cap"], correctIndex: 0},
+    {sentence: "Can you swim?", options: ["Can", "Can't"], correctIndex: 0},
+  ];
+
+  // DOM references
+  const app = document.getElementById('app');
+  const setInfo = document.getElementById('setInfo');
+  const homeBtn = document.getElementById('homeBtn');
+  const newSetBtn = document.getElementById('newSetBtn');
+  const rateCtl = document.getElementById('rateCtl');
+  const pitchCtl = document.getElementById('pitchCtl');
+  const autoplayCtl = document.getElementById('autoplayCtl');
+
+  homeBtn.addEventListener('click', showHome);
+  newSetBtn.addEventListener('click', () => {
+    // rebuild all sets with fresh random picks
+    buildSets();
+    showHome();
+  });
+
+  // App state
+  let sets = [];          // Array of arrays, each length 10
+  let answers = [];       // Mirrors sets; stores 0/1/null per q
+  let currentSetIndex = null;
+
+  // Build initial randomized sets
+  buildSets();
+  showHome();
+
+  function buildSets() {
+    const setCount = Math.max(1, Math.ceil(quizData.length / SET_SIZE));
+    sets = [];
+    answers = [];
+    for (let i = 0; i < setCount; i++) {
+      sets.push(sampleWithoutReplacement(quizData, SET_SIZE));
+      answers.push(new Array(SET_SIZE).fill(null));
+    }
+  }
+
+  function showHome() {
+    currentSetIndex = null;
+    setInfo.textContent = 'Choose a set';
+    app.innerHTML = '';
+    const intro = document.createElement('div');
+    intro.className = 'card';
+    intro.innerHTML = `
+      <h3>How it works</h3>
+      <div class="hint">Each set contains 10 randomized sentences. Tap <b>Play</b>, listen, then choose the correct word in the sentence.</div>
+      <div class="hint" style="margin-top:6px">Answer feedback is immediate. Score updates live.</div>
+    `;
+    app.appendChild(intro);
+
+    const listCard = document.createElement('div');
+    listCard.className = 'card';
+    const setsDiv = document.createElement('div');
+    setsDiv.className = 'sets';
+    sets.forEach((_, i) => {
+      const b = document.createElement('button');
+      b.className = 'btn';
+      b.textContent = `Set ${i + 1} · 10 questions`;
+      b.addEventListener('click', () => showSet(i));
+      setsDiv.appendChild(b);
+    });
+    listCard.appendChild(setsDiv);
+    app.appendChild(listCard);
+  }
+
+  function showSet(idx) {
+    currentSetIndex = idx;
+    setInfo.textContent = `Set ${idx + 1} of ${sets.length}`;
+    const qs = sets[idx];
+    const ans = answers[idx];
+
+    app.innerHTML = '';
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+
+    qs.forEach((q, qIdx) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      const title = document.createElement('h3');
+      title.textContent = `Question ${qIdx + 1}`;
+      card.appendChild(title);
+
+      const row = document.createElement('div');
+      row.className = 'row';
+      const play = document.createElement('button');
+      play.className = 'play';
+      play.setAttribute('aria-label', `Play sentence ${qIdx + 1}`);
+      play.textContent = 'Play sentence';
+      play.addEventListener('click', () => speak(q.sentence));
+      row.appendChild(play);
+      const hint = document.createElement('div');
+      hint.className = 'hint';
+      hint.textContent = 'Listen first, then choose.';
+      row.appendChild(hint);
+      card.appendChild(row);
+
+      const options = document.createElement('div');
+      options.className = 'options';
+
+      // Randomize left/right positions
+      const perm = Math.random() < 0.5 ? [0,1] : [1,0];
+
+      perm.forEach((optIndex, slot) => {
+        const btn = document.createElement('button');
+        btn.className = 'opt';
+        btn.textContent = q.options[optIndex];
+        btn.addEventListener('click', () => {
+          if (ans[qIdx] !== null) return; // already answered
+          ans[qIdx] = optIndex;
+          [...options.children].forEach((b, j) => {
+            const original = perm[j];
+            b.classList.add('selected');
+            if (original === q.correctIndex) b.classList.add('correct');
+            else if (j === slot) b.classList.add('wrong');
+            b.disabled = true;
+          });
+          msg.textContent = optIndex === q.correctIndex ? 'correct :)' : 'wrong :(';
+          msg.className = 'msg ' + (optIndex === q.correctIndex ? 'ok' : 'bad');
+          updateScore();
+        });
+        options.appendChild(btn);
+      });
+
+      card.appendChild(options);
+
+      const msg = document.createElement('div');
+      msg.className = 'msg';
+      card.appendChild(msg);
+
+      grid.appendChild(card);
+
+      // Optional autoplay on reveal
+      if (autoplayCtl.checked) {
+        // slight delay to avoid overlapping utterances
+        setTimeout(() => speak(q.sentence), 60 + 50*qIdx);
+      }
+    });
+
+    app.appendChild(grid);
+
+    // Navigation + score
+    const nav = document.createElement('div');
+    nav.className = 'nav';
+
+    const left = document.createElement('div');
+    left.style.display = 'flex';
+    left.style.gap = '10px';
+
+    const back = document.createElement('button');
+    back.className = 'btn ghost';
+    back.textContent = 'Back';
+    back.disabled = idx === 0;
+    back.addEventListener('click', () => showSet(idx - 1));
+    left.appendChild(back);
+
+    const home = document.createElement('button');
+    home.className = 'btn';
+    home.textContent = 'Home';
+    home.addEventListener('click', showHome);
+    left.appendChild(home);
+
+    const next = document.createElement('button');
+    next.className = 'btn ghost';
+    next.textContent = 'Next';
+    next.disabled = idx === sets.length - 1;
+    next.addEventListener('click', () => showSet(idx + 1));
+    left.appendChild(next);
+
+    nav.appendChild(left);
+
+    const right = document.createElement('div');
+    right.style.display = 'flex';
+    right.style.gap = '10px';
+    const score = document.createElement('div');
+    score.id = 'scoreBox';
+    score.className = 'score';
+    score.textContent = 'Score: 0 / 10';
+    right.appendChild(score);
+
+    const reset = document.createElement('button');
+    reset.className = 'btn';
+    reset.textContent = 'Reset answers';
+    reset.addEventListener('click', () => {
+      answers[idx] = new Array(SET_SIZE).fill(null);
+      showSet(idx);
+    });
+    right.appendChild(reset);
+
+    const reshuffle = document.createElement('button');
+    reshuffle.className = 'btn';
+    reshuffle.textContent = 'New 10 for this set';
+    reshuffle.addEventListener('click', () => {
+      sets[idx] = sampleWithoutReplacement(quizData, SET_SIZE);
+      answers[idx] = new Array(SET_SIZE).fill(null);
+      showSet(idx);
+    });
+    right.appendChild(reshuffle);
+
+    nav.appendChild(right);
+    app.appendChild(nav);
+
+    updateScore();
+
+    function updateScore() {
+      const got = answers[idx].reduce((s, a, i) => {
+        if (a === null) return s;
+        return s + (a === qs[i].correctIndex ? 1 : 0);
+      }, 0);
+      document.getElementById('scoreBox').textContent = `Score: ${got} / ${SET_SIZE}`;
+    }
+  }
+
+  // Speech synthesis
+  function speak(text) {
+    try {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'en-US';
+      u.rate = Number(rateCtl.value) || 1.0;
+      u.pitch = Number(pitchCtl.value) || 1.0;
+      window.speechSynthesis.speak(u);
+    } catch (e) {
+      console.warn('Speech synthesis failed:', e);
+    }
+  }
+
+  // Utilities
+  function sampleWithoutReplacement(arr, k) {
+    const n = arr.length;
+    const idxs = Array.from({length: n}, (_, i) => i);
+    // Fisher–Yates shuffle partial
+    for (let i = n - 1; i > n - 1 - Math.min(k, n); i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [idxs[i], idxs[j]] = [idxs[j], idxs[i]];
+    }
+    return idxs.slice(n - Math.min(k, n)).map(i => arr[i]);
+  }
+})();
+</script>
+</body>
+</html>
