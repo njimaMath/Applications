@@ -1,9 +1,10 @@
 # Interactive Web Tools
 
-This directory contains two interactive web applications intended for educational and productivity use:
+This directory contains three interactive web applications intended for educational and productivity use:
 
 1. **Phonics Quiz App**
 2. **LaTeX Comment Remover**
+3. **Referee Automation**
 
 ---
 
@@ -63,6 +64,40 @@ This tool removes LaTeX comments and `\iffalse...\fi` blocks from pasted LaTeX s
 - Pure HTML, CSS, and JavaScript—no frameworks.
 - Inline JavaScript implements all logic client-side.
 - Comment parsing includes escape-aware `%` detection and proper nesting for `\iffalse`.
+
+---
+
+## 3. Referee Automation
+
+**Location**: `refereeAutomation/`
+
+### Description
+
+The Referee Automation application is a web-based tool designed to assist academic paper reviewers by automating common tasks in the review process. It provides PDF to LaTeX conversion and grammar/spell checking capabilities.
+
+### Features
+
+- **PDF to LaTeX Conversion**: Upload PDF documents and convert them to LaTeX format using PyPDF2
+- **Grammar and Spell Checking**: AI-powered grammar and spell checking for LaTeX documents
+- **File Download**: Download converted LaTeX files for further editing
+- **Error Reporting**: Detailed error reports with line numbers and suggestions
+- **Web Interface**: Clean, responsive web interface for easy file management
+
+### Technical Notes
+
+- Built with **Flask** web framework
+- Uses **PyPDF2** for PDF text extraction
+- Integrates with **GROQ API** via OpenRouter for grammar checking
+- Frontend uses vanilla **HTML, CSS, and JavaScript**
+- File uploads handled with proper validation and error handling
+
+### Installation and Usage
+
+1. Navigate to the `refereeAutomation/` directory
+2. Install dependencies: `pip install -r requirements.txt`
+3. Configure API key in `.env` file (copy from `.env.template`)
+4. Run: `python app.py`
+5. Open browser to `http://localhost:5000`
 
 ---
 

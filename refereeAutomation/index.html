@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Referee Automation</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <h1>Referee Automation</h1>
+    <div class="container">
+        <div class="card">
+            <h2>PDF to LaTeX</h2>
+            <input type="file" id="pdf-upload" accept=".pdf">
+            <button id="upload-btn">Upload PDF</button>
+            <div id="download-section" style="display: none;">
+                <p>PDF uploaded successfully. Do you want to download the LaTeX file?</p>
+                <button id="download-yes">Yes</button>
+                <button id="download-no">No</button>
+            </div>
+        </div>
+        <div class="card">
+            <h2>Check for Errors</h2>
+            <button id="check-btn">List Typos and Grammatical Errors</button>
+            <div id="error-list"></div>
+        </div>
+    </div>
+    <script src="/script.js"></script>
+</body>
+</html>
