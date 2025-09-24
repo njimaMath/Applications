@@ -18,27 +18,27 @@ def pdf_to_latex(pdf_path, latex_path):
                 text += page.extract_text()
 
             # Basic LaTeX escaping
-            text = text.replace('\', '\textbackslash{}')
-            text = text.replace('{', '\{')
-            text = text.replace('}', '\}')
-            text = text.replace('#', '\#')
-            text = text.replace('$', '\$')
-            text = text.replace('%', '\%')
-            text = text.replace('&', '\&')
-            text = text.replace('_', '\_')
-            text = text.replace('^', '\textasciicircum{}')
-            text = text.replace('~', '\textasciitilde{}')
+            text = text.replace('\\', '\\textbackslash{}')
+            text = text.replace('{', '\\{')
+            text = text.replace('}', '\\}')
+            text = text.replace('#', '\\#')
+            text = text.replace('$', '\\$')
+            text = text.replace('%', '\\%')
+            text = text.replace('&', '\\&')
+            text = text.replace('_', '\\_')
+            text = text.replace('^', '\\textasciicircum{}')
+            text = text.replace('~', '\\textasciitilde{}')
 
 
-            latex_content = f"""
-\documentclass{{article}}
-\usepackage[utf8]{{inputenc}}
+            latex_content = r"""
+\documentclass{article}
+\usepackage[utf8]{inputenc}
 
-\begin{{document}}
+\begin{document}
 
-{text}
+""" + text + r"""
 
-\end{{document}}
+\end{document}
 """
 
             with open(latex_path, 'w', encoding='utf-8') as latex_file:

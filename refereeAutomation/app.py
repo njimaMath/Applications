@@ -28,12 +28,27 @@ def upload_file():
         # Convert PDF to LaTeX
         latex_filename = filename.replace('.pdf', '.tex')
         try:
-            subprocess.run(['python', 'pdf_to_latex.py', filename, latex_filename], check=True)
+            # Use the correct Python executable from the virtual environment
+            python_executable = '/home/shuta/Github/Applications/.venv/bin/python'
+            result = subprocess.run([python_executable, 'pdf_to_latex.py', filename, latex_filename], 
+                                  capture_output=True, text=True, check=True, cwd=os.getcwd())
+            print(f"PDF conversion successful: {result.stdout}")
             return jsonify({'latex_file': os.path.basename(latex_filename)})
         except subprocess.CalledProcessError as e:
-            return jsonify({'error': f'Error converting PDF to LaTeX: {e}'}), 500
+            print(f"Error converting PDF to LaTeX: {e}")
+            print(f"stdout: {e.stdout}")
+            print(f"stderr: {e.stderr}")
+            return jsonify({'error': f'Error converting PDF to LaTeX: {e.stderr}'}), 500
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
     else:
         return jsonify({'error': 'Invalid file type, please upload a PDF'}), 400
+
+@app.route('/uploads/<filename>')
+def download_file(filename):
+    """Serve files from the uploads directory"""
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
 
 @app.route('/check', methods=['POST'])
 def check_grammar():
@@ -46,12 +61,17 @@ def check_grammar():
         return jsonify({'error': 'LaTeX file not found'}), 404
 
     try:
-        result = subprocess.run(['python', 'spell_grammar_check.py', latex_filepath], capture_output=True, text=True, check=True)
+        # Use the correct Python executable from the virtual environment
+        python_executable = '/home/shuta/Github/Applications/.venv/bin/python'
+        result = subprocess.run([python_executable, 'spell_grammar_check.py', latex_filepath], 
+                              capture_output=True, text=True, check=True, cwd=os.getcwd())
+        
         # Process the output to create a structured list of errors
         errors = []
         # This is a placeholder for the actual parsing of the output
         # You will need to adjust this based on the actual output of your spell_grammar_check.py script
-        for line in result.stdout.strip().split('\n'):
+        output_lines = result.stdout.strip().split('\n') if result.stdout.strip() else []
+        for line in output_lines:
             parts = line.split(':')
             if len(parts) >= 3:
                 errors.append({
@@ -61,7 +81,13 @@ def check_grammar():
                 })
         return jsonify({'errors': errors})
     except subprocess.CalledProcessError as e:
+        print(f"Error checking grammar: {e}")
+        print(f"stdout: {e.stdout}")
+        print(f"stderr: {e.stderr}")
         return jsonify({'error': f'Error checking grammar: {e.stderr}'}), 500
+    except Exception as e:
+        print(f"Unexpected error during grammar check: {e}")
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

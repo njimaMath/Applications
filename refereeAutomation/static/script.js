@@ -41,7 +41,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     downloadYes.addEventListener('click', () => {
         if (latexFileName) {
-            window.location.href = `/uploads/${latexFileName}`;
+            // Create a temporary link element to trigger download
+            const link = document.createElement('a');
+            link.href = `/uploads/${latexFileName}`;
+            link.download = latexFileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
         downloadSection.style.display = 'none';
     });
