@@ -68,6 +68,21 @@
         .option-row label {
             margin-left: 8px;
         }
+        .option-row-text {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .option-row-text label {
+            margin-left: 0;
+            margin-bottom: 4px;
+        }
+        .option-row-text input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
         h2 {
             color: #555;
             font-size: 1.2em;
@@ -100,6 +115,10 @@
                 <input type="checkbox" id="preserveNewlines" checked>
                 <label for="preserveNewlines">Preserve empty lines (after comment removal)</label>
             </div>
+            <div class="option-row option-row-text">
+                <label for="mathCommands">Display math macros to protect (comma separated)</label>
+                <input type="text" id="mathCommands" placeholder="e.g. \al, \myAlign">
+            </div>
         </div>
         
         <textarea id="inputText" placeholder="Paste your LaTeX text with comments here..."></textarea>
@@ -126,6 +145,7 @@
             const removePercentComments = document.getElementById('removePercentComments');
             const removeIffalseFi = document.getElementById('removeIffalseFi');
             const preserveNewlines = document.getElementById('preserveNewlines');
+            const mathCommandsInput = document.getElementById('mathCommands');
             
             // Process button click
             processBtn.addEventListener('click', function() {
@@ -149,9 +169,10 @@
                 
                 // Clean up empty lines if not preserving them
                 if (!preserveNewlines.checked) {
-                    result = result.replace(/\n\s*\n/g, '\n');
+                    const userMathCommands = parseMathCommands(mathCommandsInput ? mathCommandsInput.value : '');
+                    result = removeEmptyLinesOutsideMath(result, userMathCommands);
                 }
-                
+
                 outputText.value = result;
                 setStatus('Comments removed successfully!');
             });
@@ -248,6 +269,207 @@
                     }
                 }
                 return -1;
+            }
+
+            function parseMathCommands(value) {
+                if (!value) {
+                    return [];
+                }
+                return value
+                    .split(',')
+                    .map(cmd => cmd.trim())
+                    .filter(Boolean)
+                    .map(cmd => (cmd.startsWith('\\') ? cmd : `\\${cmd}`));
+            }
+
+            function removeEmptyLinesOutsideMath(text, userMathCommands) {
+                const defaultCommands = ['\\al'];
+                const allCommands = Array.from(new Set([...defaultCommands, ...userMathCommands]));
+                const mathRanges = findMathRanges(text, allCommands);
+
+                if (!mathRanges.length) {
+                    return collapseBlankLines(text);
+                }
+
+                let result = '';
+                let lastIndex = 0;
+
+                for (const range of mathRanges) {
+                    if (range.start > lastIndex) {
+                        result += collapseBlankLines(text.slice(lastIndex, range.start));
+                    }
+                    result += text.slice(range.start, range.end);
+                    lastIndex = range.end;
+                }
+
+                if (lastIndex < text.length) {
+                    result += collapseBlankLines(text.slice(lastIndex));
+                }
+
+                return result;
+            }
+
+            function collapseBlankLines(segment) {
+                return segment.replace(/\n[ \t]*\n+/g, '\n');
+            }
+
+            function findMathRanges(text, mathCommands) {
+                const ranges = [];
+                ranges.push(...findEnvironmentRanges(text));
+                ranges.push(...findBracketedMathRanges(text));
+                ranges.push(...findCommandRanges(text, mathCommands));
+
+                if (!ranges.length) {
+                    return [];
+                }
+
+                ranges.sort((a, b) => a.start - b.start);
+
+                const merged = [ranges[0]];
+                for (let i = 1; i < ranges.length; i++) {
+                    const current = ranges[i];
+                    const last = merged[merged.length - 1];
+
+                    if (current.start <= last.end) {
+                        last.end = Math.max(last.end, current.end);
+                    } else {
+                        merged.push(current);
+                    }
+                }
+
+                return merged;
+            }
+
+            function findEnvironmentRanges(text) {
+                const mathEnvironments = new Set([
+                    'align', 'align*', 'alignat', 'alignat*', 'aligned', 'aligned*', 'flalign', 'flalign*',
+                    'gather', 'gather*', 'equation', 'equation*', 'multline', 'multline*', 'eqnarray', 'eqnarray*',
+                    'split', 'cases', 'dcases', 'matrix', 'pmatrix', 'bmatrix', 'vmatrix', 'Vmatrix', 'smallmatrix',
+                    'IEEEeqnarray', 'IEEEeqnarray*'
+                ]);
+                const ranges = [];
+                const beginRegex = /\\begin\{([a-zA-Z*]+)\}/g;
+                let match;
+
+                while ((match = beginRegex.exec(text)) !== null) {
+                    const envName = match[1];
+                    if (!mathEnvironments.has(envName)) {
+                        continue;
+                    }
+
+                    const start = match.index;
+                    const pattern = new RegExp(`\\\\begin\{${escapeRegExp(envName)}\}|\\\\end\{${escapeRegExp(envName)}\}`, 'g');
+                    pattern.lastIndex = beginRegex.lastIndex;
+                    let depth = 1;
+                    let innerMatch;
+
+                    while ((innerMatch = pattern.exec(text)) !== null) {
+                        if (innerMatch[0].startsWith('\\begin')) {
+                            depth++;
+                        } else {
+                            depth--;
+                            if (depth === 0) {
+                                ranges.push({ start, end: innerMatch.index + innerMatch[0].length });
+                                beginRegex.lastIndex = innerMatch.index + innerMatch[0].length;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                return ranges;
+            }
+
+            function findBracketedMathRanges(text) {
+                const ranges = [];
+                let searchIndex = 0;
+
+                while (true) {
+                    const start = text.indexOf('\\[', searchIndex);
+                    if (start === -1) {
+                        break;
+                    }
+                    const end = text.indexOf('\\]', start + 2);
+                    if (end === -1) {
+                        break;
+                    }
+                    ranges.push({ start, end: end + 2 });
+                    searchIndex = end + 2;
+                }
+
+                searchIndex = 0;
+                while (true) {
+                    const start = text.indexOf('$$', searchIndex);
+                    if (start === -1) {
+                        break;
+                    }
+                    if (start > 0 && text[start - 1] === '\\') {
+                        searchIndex = start + 2;
+                        continue;
+                    }
+                    const end = text.indexOf('$$', start + 2);
+                    if (end === -1) {
+                        break;
+                    }
+                    ranges.push({ start, end: end + 2 });
+                    searchIndex = end + 2;
+                }
+
+                return ranges;
+            }
+
+            function findCommandRanges(text, mathCommands) {
+                const ranges = [];
+
+                mathCommands.forEach(cmd => {
+                    if (!cmd) {
+                        return;
+                    }
+                    const pattern = new RegExp(`${escapeRegExp(cmd)}\s*\{`, 'g');
+                    let match;
+
+                    while ((match = pattern.exec(text)) !== null) {
+                        const braceStart = pattern.lastIndex - 1;
+                        const braceEnd = findMatchingBrace(text, braceStart);
+                        if (braceEnd === -1) {
+                            continue;
+                        }
+                        ranges.push({ start: match.index, end: braceEnd + 1 });
+                        pattern.lastIndex = braceEnd + 1;
+                    }
+                });
+
+                return ranges;
+            }
+
+            function findMatchingBrace(text, openIndex) {
+                let depth = 1;
+
+                for (let i = openIndex + 1; i < text.length; i++) {
+                    const char = text[i];
+                    if (char === '{' && !isEscaped(text, i)) {
+                        depth++;
+                    } else if (char === '}' && !isEscaped(text, i)) {
+                        depth--;
+                        if (depth === 0) {
+                            return i;
+                        }
+                    }
+                }
+
+                return -1;
+            }
+
+            function isEscaped(text, index) {
+                let backslashCount = 0;
+                for (let i = index - 1; i >= 0 && text[i] === '\\'; i--) {
+                    backslashCount++;
+                }
+                return backslashCount % 2 === 1;
+            }
+
+            function escapeRegExp(value) {
+                return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             }
             
             // Clear button click
