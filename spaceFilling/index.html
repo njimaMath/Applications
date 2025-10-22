@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Space-Filling Curve on [-N,N]^3</title>
+  <style>
+    :root {
+      --bg: #0b1020; /* deep navy */
+      --panel: #101832;
+      --ink: #e9eefc;
+      --muted: #a7b2d6;
+      --accent: #8ab4ff;
+      --accent2: #6ee7b7;
+    }
+    html, body { height: 100%; }
+    body {
+      margin: 0; display: grid; grid-template-columns: 320px 1fr; grid-template-rows: 100%;
+      background: var(--bg); color: var(--ink); font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+    .panel {
+      padding: 16px; background: var(--panel); border-right: 1px solid #223056; overflow: auto;
+    }
+    h1 { font-size: 18px; margin: 0 0 8px; letter-spacing: .2px; }
+    .sub { color: var(--muted); margin-bottom: 12px; }
+    label { display: block; margin: 8px 0 4px; color: var(--muted); }
+    input[type="number"], input[type="range"] {
+      width: 100%; background: #0b1328; border: 1px solid #1f2a4d; color: var(--ink);
+      padding: 8px; border-radius: 10px; outline: none;
+    }
+    input[type="range"] { padding: 0; height: 28px; }
+    .row { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
+    .row > * { flex: 1; }
+    .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    button {
+      background: linear-gradient(180deg, #1e2d56, #142348);
+      color: var(--ink); border: 1px solid #293b72; border-radius: 12px; padding: 8px 10px;
+      cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,.25);
+    }
+    button:active { transform: translateY(1px); }
+    .note { font-size: 12px; color: var(--muted); margin-top: 10px; }
+    .math { background: #0b1328; border: 1px dashed #26407a; padding: 10px; border-radius: 12px; margin-top: 12px; }
+    .stats { margin-top: 10px; font-variant-numeric: tabular-nums; }
+
+    #canvas { width: 100%; height: 100%; display: block; }
+    .hud {
+      position: absolute; inset: 12px 12px auto auto; background: rgba(16,24,50,.65);
+      padding: 10px 12px; border-radius: 12px; color: var(--ink); backdrop-filter: blur(6px);
+      border: 1px solid rgba(41,59,114,.6); font-size: 12px;
+    }
+    .chip { display: inline-block; padding: 2px 8px; border-radius: 999px; background: rgba(138,180,255,.15); border: 1px solid rgba(138,180,255,.35); margin-right: 6px; }
+    .legend { margin-top: 6px; color: var(--muted); }
+    .kbd { background: #0f1a36; border: 1px solid #20306b; padding: 1px 6px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <aside class="panel">
+    <h1>3D Space‑Filling Curve on $[-N,N]^3$</h1>
+    <div class="sub">Layer‑by‑layer fill of planes $z=k$ with $H_N=\{(x_1,x_2,0):\ |x_i|\le N\}$.</div>
+
+    <label for="N">N (grid half‑size)</label>
+    <div class="row">
+      <input id="N" type="number" min="1" max="24" value="4" />
+      <button id="regen">Regenerate</button>
+    </div>
+
+    <label for="speed">Animation speed (segments/second)</label>
+    <input id="speed" type="range" min="50" max="5000" value="1200" />
+    <div class="row">
+      <label><input id="animate" type="checkbox" checked /> Animate</label>
+      <label><input id="showPlane" type="checkbox" checked /> Highlight current plane</label>
+    </div>
+
+    <div class="btns">
+      <button id="reset">Reset view</button>
+      <button id="download">Download PNG</button>
+    </div>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="math">
+      <div><b>Construction goals</b></div>
+      <div>Start at $N(\mathbf e_1+\mathbf e_2+\mathbf e_3)$, fill the plane $N\mathbf e_3+H_N$ ending at $N\mathbf e_3$; move to $(N-1)\mathbf e_3$; fill $(N-1)\mathbf e_3+H_N$ ending at $(N-1)\mathbf e_3+N(\mathbf e_1+\mathbf e_2)$; continue for all layers.</div>
+      <div class="note">Note: If your original “$N(\mathbf e_1+\mathbf e_2+\mathbf e_2)$” was a typo, we interpret it as $N(\mathbf e_1+\mathbf e_2+\mathbf e_3)$ to match the layer description.</div>
+    </div>
+
+    <div class="note">
+      Drag to rotate. Scroll to zoom. Hold <span class="kbd">Shift</span> and drag to pan.
+    </div>
+  </aside>
+
+  <main style="position: relative;">
+    <canvas id="canvas"></canvas>
+    <div class="hud" id="hud">
+      <span class="chip">Start: $N(\mathbf e_1+\mathbf e_2+\mathbf e_3)$</span>
+      <span class="chip">Top plane end: $N\,\mathbf e_3$</span>
+      <div class="legend">Path alternates per layer: corner→center, center→corner, ensuring a single vertical step between planes.</div>
+    </div>
+  </main>
+
+  <!-- MathJax (TeX) -->
+  <script async id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <script>
+  // ---------- Geometry: generate a 2D spiral covering [-N,N]^2 from corner (N,N) to center (0,0)
+  function spiral2D(N) {
+    const path = [];
+    let left = -N, right = N, top = N, bottom = -N;
+    let x = right, y = top;
+    while (left <= right && bottom <= top) {
+      // top row: (right,top) -> (left,top)
+      for (x = right; x >= left; x--) path.push([x, top]);
+      top--; if (bottom > top) break;
+      // left column: (left,top) -> (left,bottom)
+      for (y = top; y >= bottom; y--) path.push([left, y]);
+      left++; if (left > right) break;
+      // bottom row: (left,bottom) -> (right,bottom)
+      for (x = left; x <= right; x++) path.push([x, bottom]);
+      bottom++; if (bottom > top) break;
+      // right column: (right,bottom) -> (right,top)
+      for (y = bottom; y <= top; y++) path.push([right, y]);
+      right--; if (left > right) break;
+    }
+    // For odd side length, last point is the center (0,0)
+    return path;
+  }
+
+  // ---------- 3D path over all integer lattice points in [-N,N]^3
+  function path3D(N) {
+    const layer2D = spiral2D(N); // corner -> center
+    const path = [];
+    const totalLayers = 2 * N + 1;
+    for (let layer = 0; layer < totalLayers; layer++) {
+      const z = N - layer;
+      const forward = (layer % 2 === 0); // even layers: corner->center; odd: center->corner
+      const seq = forward ? layer2D : layer2D.slice().reverse();
+      const startIdx = (layer === 0) ? 0 : 1; // avoid duplicating the first point (already added via vertical step)
+      for (let i = startIdx; i < seq.length; i++) {
+        const [x, y] = seq[i];
+        path.push([x, y, z]);
+      }
+      // Add a single vertical step to the next layer (same x,y, z-1), except after the last layer
+      if (layer < totalLayers - 1) {
+        const [ex, ey] = seq[seq.length - 1];
+        path.push([ex, ey, z - 1]);
+      }
+    }
+    return path;
+  }
+
+  // ---------- Minimal 3D camera & drawing on canvas
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  let DPR = Math.max(1, window.devicePixelRatio || 1);
+
+  // Camera state
+  const camera = { yaw: -0.7, pitch: 0.8, dist: 5.5, tx: 0, ty: 0 };
+  let Nval = 4;
+  let points = path3D(Nval);
+
+  // Animation state
+  let animate = true;
+  let highlightPlane = true;
+  let speed = 1200; // segments per second
+  let drawnCount = 0;
+  let lastT = performance.now();
+
+  // Fit & projection
+  function resize() {
+    const { clientWidth, clientHeight } = canvas;
+    DPR = Math.max(1, window.devicePixelRatio || 1);
+    canvas.width = clientWidth * DPR;
+    canvas.height = clientHeight * DPR;
+  }
+
+  function project([x, y, z]) {
+    // Scale world to unit cube roughly [-1,1]
+    const s = 1 / (Nval + 0.75);
+    // Rotate yaw (around Y), then pitch (around X)
+    const cy = Math.cos(camera.yaw), sy = Math.sin(camera.yaw);
+    const cx = Math.cos(camera.pitch), sx = Math.sin(camera.pitch);
+    let X = x * s, Y = y * s, Z = z * s;
+    let x1 =  X * cy + Z * sy;
+    let z1 = -X * sy + Z * cy;
+    let y2 =  Y * cx - z1 * sx;
+    let z2 =  Y * sx + z1 * cx;
+    // Simple perspective
+    const d = camera.dist;
+    const f = d / (d - z2);
+    const cssW = canvas.width / DPR;
+    const cssH = canvas.height / DPR;
+    const scale = Math.min(cssW, cssH) * 0.45;
+    const PX = (x1 * f) * scale + cssW * 0.5 + camera.tx;
+    const PY = (y2 * f) * scale + cssH * 0.5 + camera.ty;
+    return [PX, PY, f];
+  }
+
+  function draw() {
+    ctx.save();
+    ctx.scale(DPR, DPR);
+    ctx.clearRect(0, 0, canvas.width / DPR, canvas.height / DPR);
+
+    // Background fade grid
+    const w = canvas.width / DPR, h = canvas.height / DPR;
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, '#0b1020'); grad.addColorStop(1, '#0b1326');
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+
+    // Draw bounding cube edges
+    const corners = [];
+    for (const sx of [-1, 1])
+      for (const sy of [-1, 1])
+        for (const sz of [-1, 1])
+          corners.push([sx * Nval, sy * Nval, sz * Nval]);
+
+    const edges = [];
+    for (let i = 0; i < corners.length; i++)
+      for (let j = i + 1; j < corners.length; j++) {
+        const a = corners[i], b = corners[j];
+        const diff = Math.abs(a[0]-b[0]) + Math.abs(a[1]-b[1]) + Math.abs(a[2]-b[2]);
+        if (diff === 2 * Nval && ((a[0]===b[0]) + (a[1]===b[1]) + (a[2]===b[2]) === 2)) edges.push([a,b]);
+      }
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.beginPath();
+    for (const [a,b] of edges) {
+      const [ax,ay] = project(a); const [bx,by] = project(b);
+      ctx.moveTo(ax,ay); ctx.lineTo(bx,by);
+    }
+    ctx.stroke();
+
+    // Axes
+    const axes = [
+      { a:[0,0,0], b:[ Nval,0,0], color:'#a0c4ff' }, // x
+      { a:[0,0,0], b:[0, Nval,0], color:'#b9fbc0' }, // y
+      { a:[0,0,0], b:[0,0, Nval], color:'#ffd6a5' }  // z
+    ];
+    for (const ax of axes) {
+      const [axp, ayp] = project(ax.a); const [bxp, byp] = project(ax.b);
+      ctx.strokeStyle = ax.color; ctx.globalAlpha = 0.8; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(axp,ayp); ctx.lineTo(bxp,byp); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // Highlight current plane being filled
+    if (highlightPlane && points.length > 0) {
+      const idxPerLayer = (2*Nval + 1) * (2*Nval + 1);
+      let layerIdx = Math.min(Math.floor(drawnCount / idxPerLayer), 2*Nval);
+      const z = Nval - layerIdx;
+      const quad = [[-Nval,-Nval,z],[Nval,-Nval,z],[Nval,Nval,z],[-Nval,Nval,z]];
+      ctx.beginPath();
+      quad.forEach((p,i) => {
+        const [x,y] = project(p);
+        if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      });
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(111, 207, 151, 0.12)';
+      ctx.strokeStyle = 'rgba(111, 207, 151, 0.35)';
+      ctx.lineWidth = 1.2; ctx.fill(); ctx.stroke();
+    }
+
+    // Draw path
+    if (!points.length) {
+      ctx.restore();
+      return;
+    }
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.lineWidth = 2.0; ctx.strokeStyle = '#8ab4ff';
+
+    const maxIdx = points.length - 1;
+    const progress = Math.min(drawnCount, maxIdx);
+    const lastIdx = Math.max(0, Math.floor(progress));
+    const frac = progress - lastIdx;
+    ctx.beginPath();
+    for (let i = 0; i <= lastIdx; i++) {
+      const [px, py] = project(points[i]);
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    if (frac > 0 && lastIdx < maxIdx) {
+      const curr = points[lastIdx];
+      const next = points[lastIdx + 1];
+      const interp = [
+        curr[0] + (next[0] - curr[0]) * frac,
+        curr[1] + (next[1] - curr[1]) * frac,
+        curr[2] + (next[2] - curr[2]) * frac
+      ];
+      const [ix, iy] = project(interp);
+      ctx.lineTo(ix, iy);
+    }
+    ctx.stroke();
+
+    // Head marker
+    if (points.length) {
+      let head = points[lastIdx] || points[0];
+      if (frac > 0 && lastIdx < maxIdx) {
+        const next = points[lastIdx + 1];
+        head = [
+          head[0] + (next[0] - head[0]) * frac,
+          head[1] + (next[1] - head[1]) * frac,
+          head[2] + (next[2] - head[2]) * frac
+        ];
+      }
+      const [hx, hy] = project(head);
+      ctx.fillStyle = '#6ee7b7';
+      ctx.beginPath(); ctx.arc(hx, hy, 4, 0, Math.PI * 2); ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  function tick(t) {
+    const dt = (t - lastT) / 1000; lastT = t;
+    if (animate) {
+      drawnCount += speed * dt;
+      if (drawnCount >= points.length) drawnCount = points.length - 1;
+    } else {
+      drawnCount = points.length - 1;
+    }
+    draw();
+    requestAnimationFrame(tick);
+  }
+
+  // ---------- Interaction (orbit / pan / zoom)
+  let dragging = false, panning = false, lastX = 0, lastY = 0;
+  canvas.addEventListener('mousedown', (e) => {
+    dragging = !e.shiftKey; panning = e.shiftKey; lastX = e.clientX; lastY = e.clientY;
+  });
+  window.addEventListener('mouseup', () => { dragging = false; panning = false; });
+  window.addEventListener('mousemove', (e) => {
+    if (!dragging && !panning) return;
+    const dx = (e.clientX - lastX); const dy = (e.clientY - lastY);
+    lastX = e.clientX; lastY = e.clientY;
+    if (dragging) {
+      camera.yaw += dx * 0.005;
+      camera.pitch += dy * 0.005;
+      camera.pitch = Math.max(-1.4, Math.min(1.4, camera.pitch));
+    } else if (panning) {
+      camera.tx += dx * 0.9; camera.ty += dy * 0.9;
+    }
+  });
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const s = Math.exp(-e.deltaY * 0.001);
+    camera.dist = Math.max(2.5, Math.min(20, camera.dist * s));
+  }, { passive: false });
+
+  // ---------- UI wiring
+  function updateStats() {
+    const total = Math.pow(2*Nval + 1, 3);
+    const perPlane = Math.pow(2*Nval + 1, 2);
+    const text = `Total lattice points: ${(total).toLocaleString()}<br>` +
+                 `Per plane: ${perPlane.toLocaleString()} points<br>` +
+                 `Layers: ${(2*Nval + 1)} (z = ${-Nval}\,..\,${Nval})`;
+    document.getElementById('stats').innerHTML = text;
+    if (window.MathJax) MathJax.typesetPromise();
+  }
+
+  function regenerate() {
+    const Ninput = document.getElementById('N');
+    Nval = Math.max(1, Math.min(24, parseInt(Ninput.value, 10) || 4));
+    points = path3D(Nval);
+    drawnCount = 0; lastT = performance.now();
+    updateStats();
+  }
+
+  document.getElementById('regen').addEventListener('click', regenerate);
+  document.getElementById('reset').addEventListener('click', () => {
+    camera.yaw = -0.7; camera.pitch = 0.8; camera.dist = 5.5; camera.tx = 0; camera.ty = 0; drawnCount = 0;
+  });
+  document.getElementById('download').addEventListener('click', () => {
+    // Render a clean frame, then download
+    const link = document.createElement('a');
+    link.download = `space_filling_curve_N${Nval}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  });
+  document.getElementById('animate').addEventListener('change', (e) => {
+    animate = e.target.checked;
+  });
+  document.getElementById('showPlane').addEventListener('change', (e) => {
+    highlightPlane = e.target.checked;
+  });
+  document.getElementById('speed').addEventListener('input', (e) => {
+    speed = parseInt(e.target.value, 10);
+  });
+
+  // ---------- Boot
+  function onResize() { resize(); }
+  window.addEventListener('resize', onResize);
+  onResize(); regenerate(); draw(); requestAnimationFrame(tick);
+  </script>
+</body>
+</html>
