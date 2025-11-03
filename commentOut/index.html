@@ -1,448 +1,817 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>LaTeX Comment Cleaner</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8" />
+  <title>LaTeX Comment Remover — % and \iffalse...\fi</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root {
-      color-scheme: light dark;
+      --bg: #0f1115;
+      --panel: #151822;
+      --ink: #e6e6e6;
+      --muted: #9aa4b2;
+      --accent: #6ea8fe;
+      --ok: #2ecc71;
+      --warn: #f1c40f;
+      --err: #e74c3c;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      --radius: 10px;
     }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--ink);
       margin: 0;
-      padding: 2rem 1.5rem 3rem;
-      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-      line-height: 1.55;
-      background: #f3f5f7;
-      color: #1f2733;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
     }
-
-    .container {
-      max-width: 1040px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
+    header {
+      padding: 18px 22px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.00));
+      border-bottom: 1px solid rgba(255,255,255,0.08);
     }
-
-    h1 {
+    header h1 {
+      margin: 0 0 6px 0;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: .2px;
+    }
+    header p {
       margin: 0;
-      font-size: 1.9rem;
-      font-weight: 700;
+      color: var(--muted);
+      font-size: 13px;
     }
-
-    .description {
-      margin: 0;
-      font-size: 0.95rem;
-      color: #4f5d73;
+    main {
+      padding: 18px 22px 30px;
+      display: grid;
+      gap: 14px;
     }
-
-    .panes {
+    .row {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 1rem;
+      gap: 14px;
     }
-
-    .pane {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
+    @media (max-width: 980px) {
+      .row { grid-template-columns: 1fr; }
     }
-
-    .pane span {
+    .card {
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 15px;
       font-weight: 600;
-      font-size: 0.95rem;
-      color: #334155;
+      letter-spacing: .2px;
     }
-
     textarea {
-      min-height: 320px;
-      padding: 0.85rem;
-      border: 1px solid #cbd5e1;
-      border-radius: 0.75rem;
-      background: #fff;
-      color: inherit;
-      font-size: 0.95rem;
-      font-family: "Fira Code", "Source Code Pro", Menlo, Consolas, monospace;
-      line-height: 1.45;
+      width: 100%;
+      height: 420px;
       resize: vertical;
-      box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08);
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: #0b0d12;
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 12px;
+      line-height: 1.45;
+      font-size: 13px;
+      font-family: var(--mono);
       tab-size: 2;
       white-space: pre;
-      overflow-wrap: normal;
     }
-
-    textarea:focus {
-      outline: none;
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
-    }
-
-    textarea[readonly] {
-      background: #f8fafc;
-      color: #1f2937;
-    }
-
     .controls {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.75rem;
+      gap: 10px;
+      align-items: center;
     }
-
     button {
       appearance: none;
-      border: none;
-      border-radius: 999px;
-      padding: 0.6rem 1.1rem;
-      background: #2563eb;
-      color: #fff;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 8px;
+      background: #171b26;
+      color: var(--ink);
+      padding: 10px 12px;
       font-weight: 600;
-      font-size: 0.95rem;
+      font-size: 13px;
+      letter-spacing: .2px;
       cursor: pointer;
-      box-shadow: 0 10px 18px -12px rgba(37, 99, 235, 0.95);
-      transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
     }
-
-    button:hover {
-      background: #1d4ed8;
-      box-shadow: 0 12px 22px -12px rgba(37, 99, 235, 1);
-      transform: translateY(-1px);
+    button.primary {
+      border-color: transparent;
+      background: linear-gradient(180deg, #2b66ff, #0f46ff);
+      box-shadow: 0 10px 20px rgba(86, 140, 255, .15), inset 0 1px 0 rgba(255,255,255,.08);
     }
-
-    button:active {
-      transform: translateY(0);
-      box-shadow: 0 6px 12px -10px rgba(37, 99, 235, 1);
+    button.secondary {
+      background: #121520;
     }
-
-    .secondary {
-      background: #0f172a;
-      box-shadow: 0 10px 18px -12px rgba(15, 23, 42, 0.75);
+    button.ghost {
+      background: transparent;
+      border-color: rgba(255,255,255,0.16);
     }
-
-    .secondary:hover {
-      background: #111c34;
-      box-shadow: 0 12px 22px -12px rgba(15, 23, 42, 0.85);
+    .stack { display: grid; gap: 10px; }
+    .hint { color: var(--muted); font-size: 12px; }
+    .stats {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      display: grid;
+      gap: 4px;
     }
-
-    .note {
-      margin: 0;
-      font-size: 0.85rem;
-      color: #475569;
-      background: #e2e8f0;
-      border-radius: 0.75rem;
-      padding: 0.75rem 1rem;
-      border: 1px solid rgba(148, 163, 184, 0.4);
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--muted);
     }
-
-    @media (max-width: 960px) {
-      body {
-        padding: 1.5rem 1rem 2.5rem;
-      }
-
-      .panes {
-        grid-template-columns: 1fr;
-      }
+    .badge.ok { color: #b6f3c7; border-color: rgba(46, 204, 113, .4); }
+    .badge.warn { color: #ffe9a7; border-color: rgba(241, 196, 15, .45); }
+    .badge.err { color: #ffb3b3; border-color: rgba(231, 76, 60, .45); }
+    details {
+      border: 1px dashed rgba(255,255,255,.15);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    details summary { cursor: pointer; color: var(--muted); }
+    code.inline { font-family: var(--mono); background: #0b0d12; padding: 1px 5px; border-radius: 4px; }
+    .footer {
+      color: var(--muted);
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
     }
   </style>
 </head>
 <body>
-  <main class="container">
-    <header>
-      <h1>LaTeX Comment Cleaner</h1>
-      <p class="description">
-        Paste your LaTeX on the left and use the buttons to strip different kinds of comments while keeping every blank line and space intact.
-      </p>
-    </header>
+  <header>
+    <h1>LaTeX Comment Remover</h1>
+    <p>Remove <code class="inline">%</code> line comments, <code class="inline">\iffalse ... \fi</code> blocks, or both — without introducing extra spaces or newlines.</p>
+  </header>
 
-    <section class="panes">
-      <label class="pane" for="source">
-        <span>Source</span>
-        <textarea id="source" spellcheck="false" placeholder="Paste your LaTeX snippet here..."></textarea>
-      </label>
-      <label class="pane" for="result">
-        <span>Result</span>
-        <textarea id="result" spellcheck="false" readonly placeholder="Processed output will appear here."></textarea>
-      </label>
+  <main>
+    <div class="row">
+      <section class="card stack">
+        <h2>Input LaTeX</h2>
+        <textarea id="input" spellcheck="false" placeholder="Paste your LaTeX here..."></textarea>
+        <div class="controls">
+          <button class="primary" id="btn-percent">[1] Remove only % comments</button>
+          <button class="primary" id="btn-iffalse">[2] Remove only \iffalse...\fi</button>
+          <button class="primary" id="btn-both">[3] Remove both</button>
+          <span class="badge" id="lineEndingBadge" title="Detected line ending style">LF/CRLF</span>
+        </div>
+        <label class="hint">
+          <input type="checkbox" id="protectVerbatim" checked />
+          Protect <code class="inline">\verb</code> and verbatim-like environments (<code class="inline">verbatim</code>, <code class="inline">Verbatim</code>, <code class="inline">lstlisting</code>, <code class="inline">minted</code>)
+        </label>
+        <details>
+          <summary>Notes</summary>
+          <ul class="hint">
+            <li>For <code class="inline">%</code>, trailing comments keep the original newline (LF/CRLF). Lines that are only a comment (ignoring spaces) are removed entirely to avoid creating blank lines.</li>
+            <li>For <code class="inline">\iffalse...\fi</code>, content inside the false branch is discarded. If <code class="inline">\iffalse</code> and the matching <code class="inline">\fi</code> appear alone on their own lines (ignoring spaces), those lines’ trailing newlines are also removed to avoid creating blank lines.</li>
+            <li>If there is an <code class="inline">\else</code>, only the false branch is discarded; the true branch is kept. The <code class="inline">\else</code> token itself is removed.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="card stack">
+        <h2>Output</h2>
+        <textarea id="output" spellcheck="false" placeholder="Processed LaTeX will appear here…" readonly></textarea>
+        <div class="controls">
+          <button class="secondary" id="btn-copy">Copy Output</button>
+          <button class="ghost" id="btn-download">Download .tex</button>
+          <button class="ghost" id="btn-selfcheck" title="Run built-in invariants to verify no extra spaces/newlines were introduced">Run self‑checks</button>
+        </div>
+        <div class="stats" id="stats"></div>
+      </section>
+    </div>
+
+    <section class="card stack">
+      <h2>Quick Self‑Checks</h2>
+      <div id="checkArea" class="stats"></div>
     </section>
 
-    <section class="controls">
-      <button type="button" data-action="percent">Remove % comments</button>
-      <button type="button" data-action="iffalse">Remove \iffalse ... \fi blocks</button>
-      <button type="button" data-action="both">Remove both</button>
-      <button type="button" id="copyResult" class="secondary">Copy result</button>
-    </section>
-
-    <p class="note">
-      Comment-only lines inside display math (\[...\] or $$...$$) are removed entirely so that no stray blanks remain and compilation stays happy.
-    </p>
+    <div class="footer">
+      <div>Designed for zero extra whitespace and newline fidelity.</div>
+      <div class="hint">Tip: Run “Remove both” for a final clean file prior to compilation.</div>
+    </div>
   </main>
 
-  <script>
-    (function () {
-      const source = document.getElementById('source');
-      const result = document.getElementById('result');
-      const copyButton = document.getElementById('copyResult');
-      const actionButtons = document.querySelectorAll('[data-action]');
+<script>
+/* ============================
+ * Utility helpers
+ * ============================
+ */
+const isLetter = c => /[A-Za-z@]/.test(c || '');
+function readControlSequence(input, i) {
+  // Precondition: input[i] === '\\'
+  const N = input.length;
+  if (i >= N) return null;
+  const n1 = input[i+1] || '';
+  if (isLetter(n1)) {
+    let j = i + 2;
+    while (j < N && isLetter(input[j])) j++;
+    return { name: input.slice(i+1, j), end: j, raw: input.slice(i, j), type: 'word', start: i };
+  } else {
+    // control symbol (single non-letter)
+    return { name: input[i+1] || '', end: i+2, raw: input.slice(i, i+2), type: 'symbol', start: i };
+  }
+}
+function findLineStart(input, idx) {
+  let j = idx - 1;
+  while (j >= 0 && input[j] !== '\n' && input[j] !== '\r') j--;
+  return j + 1;
+}
+function findNextNewlineStart(input, idx) {
+  // returns [pos, len] where len is 2 for CRLF, 1 for LF/CR, 0 for EOF(no newline)
+  const N = input.length;
+  if (idx >= N) return [N, 0];
+  for (let j = idx; j < N; j++) {
+    const ch = input[j];
+    if (ch === '\n') return [j, 1];
+    if (ch === '\r') {
+      if (j + 1 < N && input[j+1] === '\n') return [j, 2];
+      return [j, 1];
+    }
+  }
+  return [N, 0];
+}
+function isOnlySpaces(input, a, b) {
+  // true if input[a..b-1] has only spaces or tabs (or is empty)
+  for (let i = a; i < b; i++) {
+    const ch = input[i];
+    if (!(ch === ' ' || ch === '\t')) return false;
+  }
+  return true;
+}
+function detectLineEnding(input) {
+  // "LF", "CRLF", or "mixed/none"
+  const hasLF = input.indexOf('\n') !== -1;
+  const hasCRLF = input.indexOf('\r\n') !== -1;
+  if (hasCRLF && !input.includes('\n', input.indexOf('\r\n') + 2)) return "CRLF";
+  if (hasCRLF) return "CRLF";
+  if (hasLF) return "LF";
+  return "none";
+}
 
-      function isEscaped(text, index) {
-        let backslashCount = 0;
-        for (let i = index - 1; i >= 0 && text[i] === '\\'; i -= 1) {
-          backslashCount += 1;
+/* ===================================================
+ * Protected ranges: \verb and verbatim-like envs
+ * ===================================================
+ */
+function detectProtectedRanges(text, enable = true) {
+  if (!enable) return [];
+  const N = text.length;
+  const ranges = [];
+
+  // 1) \verb / \verb*
+  let i = 0;
+  while (i < N) {
+    const idx = text.indexOf('\\verb', i);
+    if (idx === -1) break;
+    let j = idx + 5; // after 'verb'
+    if (text[j] === '*') j++;
+    const delim = text[j];
+    if (!delim || delim === '\n' || delim === '\r' || delim === ' ' || delim === '\t') {
+      // malformed; skip just past '\verb'
+      i = idx + 5;
+      continue;
+    }
+    // scan to next same delimiter; in TeX \verb forbids line breaks inside
+    let k = j + 1;
+    while (k < N && text[k] !== delim) k++;
+    if (k < N) {
+      ranges.push({ start: idx, end: k + 1 });
+      i = k + 1;
+    } else {
+      // unmatched; stop scanning for safety
+      ranges.push({ start: idx, end: N });
+      break;
+    }
+  }
+
+  // 2) Verbatim-like environments
+  const ENVS = new Set(['verbatim','Verbatim','Verbatim*','BVerbatim','LVerbatim','lstlisting','minted']);
+  i = 0;
+  while (i < N) {
+    const bidx = text.indexOf('\\begin{', i);
+    if (bidx === -1) break;
+    const nameStart = bidx + 7;
+    const nameEnd = text.indexOf('}', nameStart);
+    if (nameEnd === -1) break;
+    const envName = text.slice(nameStart, nameEnd);
+    if (ENVS.has(envName)) {
+      const endTag = '\\end{' + envName + '}';
+      const eidx = text.indexOf(endTag, nameEnd + 1);
+      if (eidx !== -1) {
+        ranges.push({ start: bidx, end: eidx + endTag.length });
+        i = eidx + endTag.length;
+        continue;
+      } else {
+        // unmatched \begin — protect to EOF
+        ranges.push({ start: bidx, end: N });
+        break;
+      }
+    }
+    i = nameEnd + 1;
+  }
+
+  // sort and merge overlaps
+  ranges.sort((a, b) => a.start - b.start);
+  const merged = [];
+  for (const r of ranges) {
+    if (!merged.length || r.start > merged[merged.length - 1].end) {
+      merged.push({ ...r });
+    } else {
+      merged[merged.length - 1].end = Math.max(merged[merged.length - 1].end, r.end);
+    }
+  }
+  return merged;
+}
+
+/* ========================================
+ * [1] Remove only % comments (line comments)
+ * ========================================
+ * Rules:
+ *  - A % that starts a comment removes everything until (but not including) the newline.
+ *  - % escaped by an odd run of backslashes right before it (i.e. \%) is preserved.
+ *  - Inside protected ranges, % is preserved as content.
+ *  - Original newline characters are preserved verbatim (LF vs CRLF).
+ */
+function removePercentComments(input, { protectRanges = true } = {}) {
+  const protectedRanges = detectProtectedRanges(input, protectRanges);
+  let prIdx = 0;
+
+  const out = [];
+  const N = input.length;
+  let i = 0;
+  let removedCount = 0;
+
+  while (i < N) {
+    // If entering a protected range, copy it verbatim
+    if (prIdx < protectedRanges.length && i === protectedRanges[prIdx].start) {
+      out.push(input.slice(protectedRanges[prIdx].start, protectedRanges[prIdx].end));
+      i = protectedRanges[prIdx].end;
+      prIdx++;
+      continue;
+    }
+
+    const ch = input[i];
+
+    if (ch === '%') {
+      // Count immediately preceding backslashes
+      let bs = 0;
+      let k = i - 1;
+      while (k >= 0 && input[k] === '\\') { bs++; k--; }
+      const escaped = (bs % 2) === 1; // odd => \%
+      if (escaped) {
+        out.push('%');
+        i++;
+        continue;
+      }
+      // Start of a comment: drop until newline.
+      // If the '%' is the first non-space on its line, drop that line's newline too
+      // to avoid creating a blank line (e.g., inside equation environments).
+      const lineStart = findLineStart(input, i);
+      const onlySpacesBefore = isOnlySpaces(input, lineStart, i);
+      removedCount++;
+      i++; // skip '%'
+      const [nlPos, nlLen] = findNextNewlineStart(input, i);
+      if (nlLen > 0) {
+        if (onlySpacesBefore) {
+          // comment-only line: strip any leading spaces we already copied,
+          // then remove this line's newline entirely
+          let leading = 0;
+          for (let j = i - 1; j >= lineStart; j--) {
+            const ch2 = input[j];
+            if (ch2 === ' ' || ch2 === '\t') leading++; else break;
+          }
+          if (leading > 0) out.length = Math.max(0, out.length - leading);
+          i = nlPos + nlLen;
+        } else {
+          // trailing comment: preserve the newline sequence
+          i = nlPos;
+          out.push(input.slice(nlPos, nlPos + nlLen));
+          i += nlLen;
         }
-        return backslashCount % 2 === 1;
+      } else {
+        // comment extends to EOF
+        i = N;
+      }
+      continue;
+    }
+
+    out.push(ch);
+    i++;
+  }
+
+  return { text: out.join(''), removedCount };
+}
+
+/* ====================================================
+ * [1] Remove only \iffalse ... \fi blocks (with \else)
+ * ====================================================
+ * Rules:
+ *  - Treat \iffalse as starting a "false" branch to be discarded until its matching \fi.
+ *  - Support nesting of any \if... forms inside (depth tracking).
+ *  - If a top-level \else is present, discard only the false branch; keep the else branch.
+ *  - Ignore tokens inside % comments or inside protected ranges.
+ *  - Avoid introducing blank lines:
+ *      • if \iffalse is alone on its line (ignoring spaces), drop that line's trailing newline.
+ *      • if the matching \fi is alone on its line, drop that line's trailing newline.
+ *      • \else newline is kept (safer for TeX spacing).
+ */
+function removeIffalseBlocks(input, { protectRanges = true } = {}) {
+  const N = input.length;
+  const protectedRanges = detectProtectedRanges(input, protectRanges);
+  let prIdx = 0;
+
+  const out = [];
+  let i = 0;
+  let inPercentComment = false;
+
+  let removing = false;
+  let depth = 0;          // current \if.. nesting depth (only while removing)
+  let dropStartNewline = false; // whether to drop newline right after the \iffalse line
+  let blocksRemoved = 0;
+
+  while (i < N) {
+    // Protected ranges are skipped entirely (copied verbatim) regardless of removing state
+    if (!inPercentComment && prIdx < protectedRanges.length && i === protectedRanges[prIdx].start) {
+      if (!removing) out.push(input.slice(protectedRanges[prIdx].start, protectedRanges[prIdx].end));
+      i = protectedRanges[prIdx].end;
+      prIdx++;
+      continue;
+    }
+
+    const ch = input[i];
+
+    // Handle percent comments in the outer (non-removing) stream so that we don't trigger on \iffalse inside comments
+    if (!removing) {
+      if (inPercentComment) {
+        // Preserve comment characters until newline, then include newline
+        const [nlPos, nlLen] = findNextNewlineStart(input, i);
+        if (nlLen > 0) {
+          out.push(input.slice(i, nlPos + nlLen));
+          i = nlPos + nlLen;
+          inPercentComment = false;
+        } else {
+          // comment to EOF
+          out.push(input.slice(i));
+          i = N; // comment to EOF
+        }
+        continue;
+      }
+      if (ch === '%') {
+        // determine if escaped \%
+        let bs = 0, k = i - 1;
+        while (k >= 0 && input[k] === '\\') { bs++; k--; }
+        const escaped = (bs % 2) === 1;
+        if (escaped) {
+          out.push('%'); i++; continue;
+        }
+        // enter comment mode and output the literal '%'
+        out.push('%');
+        inPercentComment = true;
+        i++; // move past '%'
+        continue;
+      }
+    }
+
+    // Newlines pass through unless they are inside "removing" mode
+    if (ch === '\n' || ch === '\r') {
+      if (!removing) {
+        out.push(ch);
+      }
+      i++;
+      continue;
+    }
+
+    if (ch === '\\') {
+      const tok = readControlSequence(input, i);
+
+      // If we are not removing, check for \iffalse
+      if (!removing && tok && tok.type === 'word' && tok.name === 'iffalse') {
+        removing = true;
+        depth = 1;
+        blocksRemoved++;
+        // check if token is alone on its line before it (to decide newline drop)
+        const lineStart = findLineStart(input, tok.start);
+        dropStartNewline = isOnlySpaces(input, lineStart, tok.start);
+        // consume token and continue (do not emit)
+        i = tok.end;
+        // From now, skip content until we handle else/fi via parser below
+        continue;
       }
 
-      const COMMENT_STRIP_ENVIRONMENTS = new Set(['align', 'align*', 'equation', 'equation*']);
-
-      function removePercentComments(text) {
-        const output = [];
-        const mathContextStack = [];
-        const len = text.length;
-        let i = 0;
-
-        function removeTrailingLineWhitespace() {
-          while (output.length > 0) {
-            const last = output[output.length - 1];
-            if (last === ' ' || last === '\t') {
-              output.pop();
-              continue;
-            }
-            if (last === '\r' || last === '\n') {
-              break;
-            }
-            break;
+      if (removing && tok && tok.type === 'word') {
+        // handle nested \if..., \else, \fi inside the removing zone
+        const name = tok.name;
+        if (name.startsWith('if')) {
+          depth++;
+          i = tok.end;
+          continue;
+        }
+        if (name === 'else') {
+          if (depth === 1) {
+            // Top-level else: stop skipping content; keep subsequent content until matching \fi
+            i = tok.end; // do not emit \else itself
+            // Keep the newline after \else to avoid accidental token merging
+            continue;
+          } else {
+            // nested else inside false branch
+            i = tok.end;
+            continue;
           }
         }
-
-        while (i < len) {
-          const char = text[i];
-
-          if (char === '\r') {
-            output.push('\r');
-            i += 1;
-            if (i < len && text[i] === '\n') {
-              output.push('\n');
-              i += 1;
-            }
-            continue;
-          }
-
-          if (char === '\n') {
-            output.push('\n');
-            i += 1;
-            continue;
-          }
-
-          if (!isEscaped(text, i)) {
-            if (char === '\\') {
-              const next = text[i + 1];
-              if (next === '[') {
-                mathContextStack.push('\\[');
-                output.push('\\', '[');
-                i += 2;
-                continue;
-              }
-              if (next === ']') {
-                if (mathContextStack[mathContextStack.length - 1] === '\\[') {
-                  mathContextStack.pop();
-                }
-                output.push('\\', ']');
-                i += 2;
-                continue;
-              }
-              if (text.startsWith('\\begin{', i)) {
-                const braceStart = i + '\\begin{'.length;
-                const braceEnd = text.indexOf('}', braceStart);
-                if (braceEnd !== -1) {
-                  const envName = text.slice(braceStart, braceEnd);
-                  if (COMMENT_STRIP_ENVIRONMENTS.has(envName)) {
-                    mathContextStack.push(`env:${envName}`);
-                  }
-                }
-              } else if (text.startsWith('\\end{', i)) {
-                const braceStart = i + '\\end{'.length;
-                const braceEnd = text.indexOf('}', braceStart);
-                if (braceEnd !== -1) {
-                  const envName = text.slice(braceStart, braceEnd);
-                  if (COMMENT_STRIP_ENVIRONMENTS.has(envName)) {
-                    const expected = `env:${envName}`;
-                    for (let idx = mathContextStack.length - 1; idx >= 0; idx -= 1) {
-                      if (mathContextStack[idx] === expected) {
-                        mathContextStack.splice(idx, 1);
-                        break;
-                      }
-                    }
-                  }
-                }
-              }
-            } else if (char === '$' && text[i + 1] === '$') {
-              const top = mathContextStack[mathContextStack.length - 1];
-              if (top === '$$') {
-                mathContextStack.pop();
-              } else {
-                mathContextStack.push('$$');
-              }
-              output.push('$', '$');
-              i += 2;
-              continue;
-            }
-          }
-
-          if (char === '%' && !isEscaped(text, i)) {
-            const prevNewline = Math.max(text.lastIndexOf('\n', i - 1), text.lastIndexOf('\r', i - 1));
-            const lineStart = prevNewline === -1 ? 0 : prevNewline + 1;
-            const before = text.slice(lineStart, i);
-            const inMathBlock = mathContextStack.length > 0;
-            const hasContent = /\S/.test(before);
-
-            let j = i + 1;
-            while (j < len && text[j] !== '\r' && text[j] !== '\n') {
-              j += 1;
-            }
-
-            const newlineStart = j;
-            let newlineLength = 0;
-            if (j < len) {
-              if (text[j] === '\r' && j + 1 < len && text[j + 1] === '\n') {
-                newlineLength = 2;
-              } else {
-                newlineLength = 1;
-              }
-            }
-
-            if (inMathBlock && !hasContent) {
-              removeTrailingLineWhitespace();
-              if (newlineLength > 0) {
-                i = newlineStart + newlineLength;
-              } else {
-                i = newlineStart;
-              }
-              continue;
-            }
-
-            i = newlineStart;
-            continue;
-          }
-
-          output.push(char);
-          i += 1;
-        }
-
-        return output.join('');
-      }
-
-      function removeIffalseBlocks(text) {
-        const startToken = '\\iffalse';
-        const endToken = '\\fi';
-        let cursor = 0;
-        const len = text.length;
-        let output = '';
-
-        while (cursor < len) {
-          const startIndex = text.indexOf(startToken, cursor);
-          if (startIndex === -1) {
-            output += text.slice(cursor);
-            break;
-          }
-
-          output += text.slice(cursor, startIndex);
-          let scan = startIndex + startToken.length;
-          let depth = 1;
-
-          while (scan < len && depth > 0) {
-            if (text.startsWith(startToken, scan)) {
-              depth += 1;
-              scan += startToken.length;
-              continue;
-            }
-
-            if (text.startsWith(endToken, scan)) {
-              depth -= 1;
-              scan += endToken.length;
-              continue;
-            }
-
-            scan += 1;
-          }
-
+        if (name === 'fi') {
+          // close one level
+          depth--;
+          const tokStart = tok.start;
+          i = tok.end; // consume \fi (do not emit)
           if (depth === 0) {
-            const block = text.slice(startIndex, scan);
-            const newlines = block.match(/\r\n|\n|\r/g);
-            if (newlines) {
-              for (const nl of newlines) {
-                output += nl;
-              }
+            // Decide whether to drop the newline *after* this \fi line
+            const lineStart = findLineStart(input, tokStart);
+            const [nlPos, nlLen] = findNextNewlineStart(input, i);
+            const onlySpacesBefore = isOnlySpaces(input, lineStart, tokStart);
+            const onlySpacesAfter  = isOnlySpaces(input, i, nlPos);
+            if (dropStartNewline && onlySpacesBefore && onlySpacesAfter && nlLen > 0) {
+              // Skip the newline to avoid creating a blank line
+              i = nlPos + nlLen;
             }
-            cursor = scan;
-          } else {
-            output += text.slice(startIndex);
-            break;
+            // Reset removal state
+            removing = false;
+            depth = 0;
+            dropStartNewline = false;
           }
+          continue;
         }
-
-        return output;
+        // any other control word while removing: just skip it
+        i = tok.end;
+        continue;
       }
 
-      function runAction(action) {
-        const value = source.value;
-        let processed = value;
+      // default: not removing or irrelevant token — pass through
+      if (!removing) out.push(tok.raw);
+      i = tok.end;
+      continue;
+    }
 
-        if (action === 'percent') {
-          processed = removePercentComments(value);
-        } else if (action === 'iffalse') {
-          processed = removeIffalseBlocks(value);
-        } else if (action === 'both') {
-          processed = removePercentComments(removeIffalseBlocks(value));
-        }
+    // Any other character
+    if (!removing) out.push(ch);
+    i++;
+  }
 
-        result.value = processed;
-      }
+  // If we ended while still "removing" (unmatched \iffalse), we have already skipped to EOF — that's intentional.
+  return { text: out.join(''), blocksRemoved };
+}
 
-      actionButtons.forEach((button) => {
-        button.addEventListener('click', () => {
-          runAction(button.dataset.action);
-        });
-      });
+/* ================================
+ * [3] Remove both (composition)
+ * ================================ */
+function removeBothKinds(input, opts) {
+  // Perform \iffalse...\fi first (safer for layout), then % comments.
+  const a = removeIffalseBlocks(input, opts);
+  const b = removePercentComments(a.text, opts);
+  return {
+    text: b.text,
+    blocksRemoved: a.blocksRemoved,
+    percentRemoved: b.removedCount
+  };
+}
 
-      copyButton.addEventListener('click', async () => {
-        const textToCopy = result.value;
-        if (!textToCopy) {
-          return;
-        }
+/* ================================
+ * UI glue
+ * ================================ */
+const $ = sel => document.querySelector(sel);
+const inputEl  = $('#input');
+const outputEl = $('#output');
+const statsEl  = $('#stats');
+const badgeEl  = $('#lineEndingBadge');
+const protectEl= $('#protectVerbatim');
+const checkArea= $('#checkArea');
 
-        const reset = () => {
-          copyButton.textContent = 'Copy result';
-        };
+function setBadge(text, cls='') {
+  badgeEl.textContent = text;
+  badgeEl.classList.remove('ok','warn','err');
+  if (cls) badgeEl.classList.add(cls);
+}
 
-        try {
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            await navigator.clipboard.writeText(textToCopy);
-          } else {
-            result.focus();
-            result.select();
-            document.execCommand('copy');
-            window.getSelection().removeAllRanges();
-          }
-          copyButton.textContent = 'Copied!';
-          setTimeout(reset, 1600);
-        } catch (error) {
-          copyButton.textContent = 'Copy failed';
-          setTimeout(reset, 2000);
-        }
-      });
+function renderStats({ kind, percentRemoved = 0, blocksRemoved = 0, before = '', after = '' }) {
+  const deltaLen = after.length - before.length;
+  const beforeNL = (before.match(/\r\n|\r|\n/g) || []).length;
+  const afterNL  = (after.match(/\r\n|\r|\n/g) || []).length;
+  const nlDelta  = afterNL - beforeNL;
 
-      source.addEventListener('input', () => {
-        result.value = source.value;
-      });
+  statsEl.innerHTML = `
+    <div>Mode: <code class="inline">${kind}</code></div>
+    <div>Removed % line-comments: <strong>${percentRemoved}</strong></div>
+    <div>Removed \\iffalse...\\fi blocks: <strong>${blocksRemoved}</strong></div>
+    <div>Characters Δ: <strong>${deltaLen}</strong></div>
+    <div>Newlines Δ: <strong>${nlDelta}</strong> ${nlDelta > 0 ? '<span class="badge warn">added newlines (should be 0)</span>' : (nlDelta === 0 ? '<span class="badge ok">no newlines added</span>' : '')}</div>
+  `;
+}
 
-      result.value = '';
-    })();
-  </script>
+function process(kind) {
+  const before = inputEl.value;
+  const lineEnding = detectLineEnding(before);
+  setBadge(lineEnding || 'none', ''); // display detected style
+
+  const opt = { protectRanges: protectEl.checked };
+  let res, text, percentRemoved=0, blocksRemoved=0;
+
+  if (kind === 'percent') {
+    res = removePercentComments(before, opt);
+    text = res.text; percentRemoved = res.removedCount;
+  } else if (kind === 'iffalse') {
+    res = removeIffalseBlocks(before, opt);
+    text = res.text; blocksRemoved = res.blocksRemoved;
+  } else {
+    res = removeBothKinds(before, opt);
+    text = res.text; percentRemoved = res.percentRemoved; blocksRemoved = res.blocksRemoved;
+  }
+
+  outputEl.value = text;
+  renderStats({ kind, percentRemoved, blocksRemoved, before, after: text });
+}
+
+$('#btn-percent').addEventListener('click', () => process('percent'));
+$('#btn-iffalse').addEventListener('click', () => process('iffalse'));
+$('#btn-both').addEventListener('click', () => process('both'));
+
+$('#btn-copy').addEventListener('click', async () => {
+  outputEl.select();
+  try {
+    await navigator.clipboard.writeText(outputEl.value);
+    $('#btn-copy').textContent = 'Copied';
+    setTimeout(() => $('#btn-copy').textContent = 'Copy Output', 1000);
+  } catch {
+    document.execCommand('copy');
+  }
+});
+
+$('#btn-download').addEventListener('click', () => {
+  const blob = new Blob([outputEl.value], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'cleaned.tex';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 0);
+});
+
+/* ================================
+ * Built‑in self‑checks (idempotent)
+ * ================================ */
+function assertEq(name, got, want) {
+  const ok = got === want;
+  const line = document.createElement('div');
+  line.innerHTML = ok
+    ? `<span class="badge ok">OK</span> ${name}`
+    : `<span class="badge err">FAIL</span> ${name}
+       <div class="hint"><strong>got</strong>: <code class="inline">${escapeHTML(got)}</code></div>
+       <div class="hint"><strong>want</strong>: <code class="inline">${escapeHTML(want)}</code></div>`;
+  checkArea.appendChild(line);
+  return ok;
+}
+function escapeHTML(s){return s.replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+
+function runSelfChecks() {
+  checkArea.innerHTML = '';
+
+  // 1) % simple (LF)
+  let a = "x % hi\ny\n";
+  let r1 = removePercentComments(a).text;
+  assertEq('% simple keeps newline', r1, "x \ny\n");
+
+  // 2) \% literal
+  a = "100\\% sure\n";
+  r1 = removePercentComments(a).text;
+  assertEq('\\% is literal', r1, "100\\% sure\n");
+
+  // 3) \\% should start a real comment (common TeX behavior)
+  a = "\\\\% comment\nx\n";
+  r1 = removePercentComments(a).text;
+  assertEq('\\\\% starts comment', r1, "\\\\\nx\n");
+
+  // 4) \verb protection
+  a = "\\verb|% not a comment| and text % cut\n";
+  r1 = removePercentComments(a).text;
+  assertEq('\\verb protected', r1, "\\verb|% not a comment| and text \n");
+
+  // 5) CRLF preservation
+  a = "a\r\n% c\r\nb\r\n";
+  r1 = removePercentComments(a).text;
+  assertEq('CRLF preserved', r1, "a\r\n\r\nb\r\n");
+
+  // 6) \iffalse block, own lines, no else → no blank line
+  a = "A\n\\iffalse\nX\nY\n\\fi\nB\n";
+  let r2 = removeIffalseBlocks(a).text;
+  assertEq('\\iffalse own lines → no blank gap', r2, "A\nB\n");
+
+  // 7) \iffalse inline
+  a = "A \\iffalse dead \\fi B\n";
+  r2 = removeIffalseBlocks(a).text;
+  assertEq('\\iffalse inline', r2, "A  B\n");
+
+  // 8) with \else keep true branch
+  a = "pre\n\\iffalse\nX\n\\else\nY\n\\fi\npost\n";
+  r2 = removeIffalseBlocks(a).text;
+  assertEq('\\iffalse with else keeps true', r2, "pre\nY\npost\n");
+
+  // 9) nested ifs inside false branch
+  a = "\\iffalse A \\iftrue B \\else C \\fi D \\fi Z\n";
+  r2 = removeIffalseBlocks(a).text;
+  assertEq('nested ifs inside false branch', r2, " Z\n");
+
+  // 10) Both kinds
+  a = "x % c1\ny\n\\iffalse\nz% c2\n\\fi\nw% c3\n";
+  const r3 = removeBothKinds(a);
+  assertEq('both kinds combined', r3.text, "x \ny\nw\n");
+
+  // 7b) removeIffalseBlocks should not remove % comments
+  a = "A % keep this comment\n";
+  r2 = removeIffalseBlocks(a).text;
+  assertEq('iffalse-only preserves % comments', r2, "A % keep this comment\n");
+  a = "100\\% sure % and comment\n";
+  r2 = removeIffalseBlocks(a).text;
+  assertEq('iffalse-only preserves literal \\% and comment', r2, "100\\% sure % and comment\n");
+
+  // 12) Indented comment-only line should not leave stray spaces or blank lines
+  a = [
+    '\\begin{equation}',
+    '  % indented comment',
+    'x',
+    '\\end{equation}',
+    ''
+  ].join('\\n');
+  const r5 = removeBothKinds(a);
+  assertEq('indented comment-only line → no blank line or spaces', r5.text, [
+    '\\begin{equation}',
+    'x',
+    '\\end{equation}',
+    ''
+  ].join('\\n'));
+
+  // 11) Comment-only line inside equation environment should not create a blank line
+  a = [
+    '"sentence"',
+    '',
+    '\\begin{equation}',
+    'asfdf',
+    '%\\if',
+    'sadafd',
+    '\\end{equation}',
+    ''
+  ].join('\n');
+  const r4 = removeBothKinds(a);
+  assertEq('comment-only line in equation → no blank line', r4.text, [
+    '"sentence"',
+    '',
+    '\\begin{equation}',
+    'asfdf',
+    'sadafd',
+    '\\end{equation}',
+    ''
+  ].join('\n'));
+
+  // Summary badge
+  const allPass = [...checkArea.querySelectorAll('.badge.err')].length === 0;
+  setBadge(allPass ? 'Self‑checks OK' : 'Self‑checks failed', allPass ? 'ok' : 'err');
+}
+$('#btn-selfcheck').addEventListener('click', runSelfChecks);
+
+/* Demo: prefill a small example for quick testing */
+inputEl.value = [
+  "% leading comment should vanish",
+  "\\title{Sample} % trailing title comment",
+  "",
+  "100\\% correct; but \\\\% here starts a real comment",
+  "",
+  "\\iffalse",
+  "  This entire block disappears, including its newlines.",
+  "  % even comments in here are gone",
+  "\\fi",
+  "",
+  "\\iffalse inline \\fi still fine.",
+  "",
+  "\\iffalse",
+  "false branch",
+  "\\else",
+  "true branch",
+  "\\fi",
+  "",
+  "\\verb|% in verbatim-like stays| and code below:",
+  "\\begin{verbatim}",
+  "% inside verbatim",
+  "\\end{verbatim}"
+].join("\n");
+
+setBadge(detectLineEnding(inputEl.value));
+</script>
 </body>
 </html>
