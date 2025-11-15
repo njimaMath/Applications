@@ -159,9 +159,9 @@
         <h2>Input LaTeX</h2>
         <textarea id="input" spellcheck="false" placeholder="Paste your LaTeX here..."></textarea>
         <div class="controls">
-          <button class="primary" id="btn-percent">[1] Remove only % comments</button>
-          <button class="primary" id="btn-iffalse">[2] Remove only \iffalse...\fi</button>
-          <button class="primary" id="btn-both">[3] Remove both</button>
+          <button class="primary" id="btn-both">[1] Remove both</button>
+          <button class="primary" id="btn-percent">[2] Remove only % comments</button>
+          <button class="primary" id="btn-iffalse">[3] Remove only \iffalse...\fi</button>
           <span class="badge" id="lineEndingBadge" title="Detected line ending style">LF/CRLF</span>
         </div>
         <label class="hint">
@@ -785,32 +785,8 @@ function runSelfChecks() {
 }
 $('#btn-selfcheck').addEventListener('click', runSelfChecks);
 
-/* Demo: prefill a small example for quick testing */
-inputEl.value = [
-  "% leading comment should vanish",
-  "\\title{Sample} % trailing title comment",
-  "",
-  "100\\% correct; but \\\\% here starts a real comment",
-  "",
-  "\\iffalse",
-  "  This entire block disappears, including its newlines.",
-  "  % even comments in here are gone",
-  "\\fi",
-  "",
-  "\\iffalse inline \\fi still fine.",
-  "",
-  "\\iffalse",
-  "false branch",
-  "\\else",
-  "true branch",
-  "\\fi",
-  "",
-  "\\verb|% in verbatim-like stays| and code below:",
-  "\\begin{verbatim}",
-  "% inside verbatim",
-  "\\end{verbatim}"
-].join("\n");
-
+/* Start with empty input so the page opens with a blank textarea */
+inputEl.value = '';
 setBadge(detectLineEnding(inputEl.value));
 </script>
 </body>
