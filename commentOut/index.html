@@ -587,12 +587,13 @@ function removeBothKinds(input, opts) {
  * UI glue
  * ================================ */
 const $ = sel => document.querySelector(sel);
-const inputEl  = $('#input');
-const outputEl = $('#output');
-const statsEl  = $('#stats');
-const badgeEl  = $('#lineEndingBadge');
-const protectEl= $('#protectVerbatim');
-const checkArea= $('#checkArea');
+const inputEl   = $('#input');
+const outputEl  = $('#output');
+const statsEl   = $('#stats');
+const badgeEl   = $('#lineEndingBadge');
+const protectEl = $('#protectVerbatim');
+const checkArea = $('#checkArea');
+const copyBtn   = $('#btn-copy');
 
 function setBadge(text, cls='') {
   badgeEl.textContent = text;
@@ -638,11 +639,22 @@ function process(kind) {
   renderStats({ kind, percentRemoved, blocksRemoved, before, after: text });
 }
 
+async function copyOutput() {
+  outputEl.select();
+  try {
+    await navigator.clipboard.writeText(outputEl.value);
+  } catch {
+    document.execCommand('copy');
+  }
+  copyBtn.textContent = 'Copied';
+  setTimeout(() => copyBtn.textContent = 'Copy Output', 1000);
+}
+
 $('#btn-percent').addEventListener('click', () => process('percent'));
 $('#btn-iffalse').addEventListener('click', () => process('iffalse'));
 $('#btn-both').addEventListener('click', () => process('both'));
 
-// Allow Shift+1/2/3 to trigger the matching action buttons.
+// Allow Ctrl+1/2/3 to trigger the matching action buttons.
 const shortcutMap = {
   Digit1: () => $('#btn-both').click(),
   Digit2: () => $('#btn-percent').click(),
@@ -650,23 +662,24 @@ const shortcutMap = {
 };
 
 document.addEventListener('keydown', (event) => {
-  if (!event.shiftKey) return;
+  if (!event.ctrlKey) return;
+
+  if (event.code === 'KeyC') {
+    const active = document.activeElement;
+    const isEditable = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+    if (isEditable && active !== outputEl) return; // let native copy work in editable inputs except the output box
+    event.preventDefault();
+    copyOutput();
+    return;
+  }
+
   const action = shortcutMap[event.code];
   if (!action) return;
   event.preventDefault();
   action();
 });
 
-$('#btn-copy').addEventListener('click', async () => {
-  outputEl.select();
-  try {
-    await navigator.clipboard.writeText(outputEl.value);
-    $('#btn-copy').textContent = 'Copied';
-    setTimeout(() => $('#btn-copy').textContent = 'Copy Output', 1000);
-  } catch {
-    document.execCommand('copy');
-  }
-});
+copyBtn.addEventListener('click', copyOutput);
 
 $('#btn-download').addEventListener('click', () => {
   const blob = new Blob([outputEl.value], { type: 'text/plain;charset=utf-8' });
