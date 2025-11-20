@@ -1,18 +1,23 @@
 from flask import Flask, request, jsonify, send_from_directory
+from werkzeug.utils import secure_filename
 import subprocess
 import os
+import sys
 
 app = Flask(__name__, static_url_path='', static_folder='static')
 
-UPLOAD_FOLDER = 'uploads'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
+
+PYTHON_EXECUTABLE = sys.executable
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 @app.route('/')
 def index():
-    return send_from_directory('.', 'index.html')
+    return send_from_directory(BASE_DIR, 'index.html')
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -22,16 +27,27 @@ def upload_file():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
     if file and file.filename.endswith('.pdf'):
-        filename = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-        file.save(filename)
+        safe_name = secure_filename(file.filename)
+        pdf_filepath = os.path.join(app.config['UPLOAD_FOLDER'], safe_name)
+        file.save(pdf_filepath)
 
         # Convert PDF to LaTeX
-        latex_filename = filename.replace('.pdf', '.tex')
+        base_name, _ = os.path.splitext(safe_name)
+        latex_filename = f"{base_name}.tex"
+        latex_filepath = os.path.join(app.config['UPLOAD_FOLDER'], latex_filename)
         try:
-            # Use the correct Python executable from the virtual environment
-            python_executable = '/home/shuta/Github/Applications/.venv/bin/python'
-            result = subprocess.run([python_executable, 'pdf_to_latex.py', filename, latex_filename], 
-                                  capture_output=True, text=True, check=True, cwd=os.getcwd())
+            result = subprocess.run(
+                [
+                    PYTHON_EXECUTABLE,
+                    os.path.join(BASE_DIR, 'pdf_to_latex.py'),
+                    pdf_filepath,
+                    latex_filepath,
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+                cwd=BASE_DIR,
+            )
             print(f"PDF conversion successful: {result.stdout}")
             return jsonify({'latex_file': os.path.basename(latex_filename)})
         except subprocess.CalledProcessError as e:
@@ -61,10 +77,17 @@ def check_grammar():
         return jsonify({'error': 'LaTeX file not found'}), 404
 
     try:
-        # Use the correct Python executable from the virtual environment
-        python_executable = '/home/shuta/Github/Applications/.venv/bin/python'
-        result = subprocess.run([python_executable, 'spell_grammar_check.py', latex_filepath], 
-                              capture_output=True, text=True, check=True, cwd=os.getcwd())
+        result = subprocess.run(
+            [
+                PYTHON_EXECUTABLE,
+                os.path.join(BASE_DIR, 'spell_grammar_check.py'),
+                latex_filepath,
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+            cwd=BASE_DIR,
+        )
         
         # Process the output to create a structured list of errors
         errors = []
