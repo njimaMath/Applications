@@ -1,0 +1,20 @@
+# Environment / secrets
+.env
+.env.*
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Downloaded datasets and generated quiz data
+data/*.tar.gz
+data/corpus/
+data/clips/
+data/quiz_items.json
+data/*.tsv
+
+# Allow committed samples used in docs
+!data/sample_quiz_items.json

@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Listening Quiz — Common Voice</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&display=swap"
+    />
+    <style>
+      :root {
+        --bg: #0f172a;
+        --panel: rgba(255, 255, 255, 0.06);
+        --muted: #9fb3c8;
+        --accent: #14b8a6;
+        --accent-strong: #f59e0b;
+        --text: #e7edf5;
+        --error: #ef4444;
+        --success: #22c55e;
+        --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        background: radial-gradient(120% 120% at 20% 20%, #123262 0%, #0f172a 50%),
+          radial-gradient(140% 140% at 80% 0%, rgba(20, 184, 166, 0.25) 0%, transparent 55%),
+          #0f172a;
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+      .app {
+        width: min(960px, 100%);
+        background: var(--panel);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 18px;
+        padding: 22px clamp(22px, 4vw, 32px);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(12px);
+        animation: floatIn 0.6s ease;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(24px, 4vw, 32px);
+        letter-spacing: -0.5px;
+      }
+      .subtitle {
+        margin: 0;
+        color: var(--muted);
+        font-size: 15px;
+      }
+      .controls {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 10px;
+        margin: 16px 0 20px;
+      }
+      .control-block {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 12px;
+      }
+      label {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      select,
+      button,
+      input[type="file"] {
+        width: 100%;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text);
+        padding: 10px 12px;
+        border-radius: 10px;
+        font-size: 15px;
+        font-family: inherit;
+      }
+      button {
+        cursor: pointer;
+        transition: transform 0.1s ease, box-shadow 0.15s ease, background 0.2s;
+      }
+      button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 30px rgba(20, 184, 166, 0.25);
+        background: rgba(20, 184, 166, 0.15);
+      }
+      button:active {
+        transform: translateY(0);
+        box-shadow: none;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: rgba(20, 184, 166, 0.2);
+        border-radius: 999px;
+        color: var(--text);
+        font-size: 14px;
+      }
+      .status {
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .quiz-card {
+        margin-top: 14px;
+        padding: 20px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: linear-gradient(140deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+      }
+      .sentence {
+        font-size: clamp(18px, 3vw, 24px);
+        line-height: 1.4;
+        margin: 8px 0 6px;
+      }
+      .choices {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .choice {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        text-align: left;
+        font-size: 15px;
+        transition: border 0.15s ease, background 0.15s ease;
+      }
+      .choice strong {
+        color: var(--muted);
+        margin-right: 6px;
+      }
+      .choice.correct {
+        border-color: var(--success);
+        background: rgba(34, 197, 94, 0.12);
+      }
+      .choice.wrong {
+        border-color: var(--error);
+        background: rgba(239, 68, 68, 0.12);
+      }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        margin-top: 12px;
+        font-size: 14px;
+        color: var(--muted);
+      }
+      .score {
+        font-weight: 600;
+        color: var(--accent);
+      }
+      .audio {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-top: 10px;
+      }
+      .audio button {
+        width: auto;
+        background: rgba(20, 184, 166, 0.2);
+        border-color: rgba(20, 184, 166, 0.25);
+      }
+      .next-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 14px;
+        gap: 12px;
+      }
+      .next-row button {
+        width: auto;
+        background: var(--accent);
+        color: #0c1526;
+        border: none;
+        padding: 12px 18px;
+        font-weight: 600;
+      }
+      .feedback {
+        font-size: 15px;
+        margin-top: 4px;
+      }
+      .feedback.good {
+        color: var(--success);
+      }
+      .feedback.bad {
+        color: var(--error);
+      }
+      .small {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      @keyframes floatIn {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @media (max-width: 640px) {
+        .audio {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header>
+        <div>
+          <h1>Listening Quiz</h1>
+          <p class="subtitle">Practice confusing English sounds with Common Voice clips.</p>
+        </div>
+        <div class="pill" id="load-status">Loading data…</div>
+      </header>
+
+      <div class="controls">
+        <div class="control-block">
+          <label for="category">Category</label>
+          <select id="category"></select>
+          <div class="status">If no categories appear, load a dataset first.</div>
+        </div>
+        <div class="control-block">
+          <label for="rounds">Rounds</label>
+          <select id="rounds">
+            <option value="5">5</option>
+            <option value="10" selected>10</option>
+            <option value="15">15</option>
+            <option value="0">Endless</option>
+          </select>
+          <div class="status">Change rounds and hit Next to start.</div>
+        </div>
+        <div class="control-block">
+          <label for="upload">Load local quiz JSON</label>
+          <input id="upload" type="file" accept="application/json" />
+          <div class="status">Use `prepare_quiz_data.py` output or drop your own JSON.</div>
+        </div>
+        <div class="control-block">
+          <label>Dataset</label>
+          <button id="use-sample">Use built-in sample</button>
+          <div class="status">Automatically used if remote data is missing.</div>
+        </div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="meta">
+          <span class="pill">Category: <span id="category-label">n/a</span></span>
+          <span class="score">Score: <span id="score">0</span>/<span id="total">0</span></span>
+          <span id="feedback" class="feedback"></span>
+        </div>
+
+        <div class="sentence" id="sentence">Pick a category to begin.</div>
+
+        <div class="choices">
+          <button class="choice" id="choice-a"><strong>A</strong> <span></span></button>
+          <button class="choice" id="choice-b"><strong>B</strong> <span></span></button>
+        </div>
+
+        <div class="audio">
+          <audio id="audio" controls preload="none" style="flex: 1 1 auto">
+            Your browser does not support the audio element.
+          </audio>
+          <button id="play-btn">Replay</button>
+          <span class="small" id="audio-status"></span>
+        </div>
+
+        <div class="next-row">
+          <span class="small">Answer with A/B; Next moves to another clip.</span>
+          <button id="next-btn">Next</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const DEFAULT_ITEMS = [
+        {
+          category: "positive_negative",
+          audio: "",
+          sentence: "I have a pen.",
+          blank_index: 1,
+          optionA: "have",
+          optionB: "haven't",
+          correct: "have",
+        },
+        {
+          category: "positive_negative",
+          audio: "",
+          sentence: "I haven't finished yet.",
+          blank_index: 1,
+          optionA: "have",
+          optionB: "haven't",
+          correct: "haven't",
+        },
+        {
+          category: "L_R",
+          audio: "",
+          sentence: "Turn on the right light.",
+          blank_index: 3,
+          optionA: "light",
+          optionB: "right",
+          correct: "right",
+        },
+        {
+          category: "V_B",
+          audio: "",
+          sentence: "The vet checked the best option for my dog.",
+          blank_index: 1,
+          optionA: "vet",
+          optionB: "bet",
+          correct: "vet",
+        },
+        {
+          category: "S_TH",
+          audio: "",
+          sentence: "The sink is full of dishes.",
+          blank_index: 1,
+          optionA: "sink",
+          optionB: "think",
+          correct: "sink",
+        },
+        {
+          category: "D_TH",
+          audio: "",
+          sentence: "They opened the door quietly.",
+          blank_index: 0,
+          optionA: "day",
+          optionB: "they",
+          correct: "They",
+        },
+      ];
+
+      const state = {
+        data: [],
+        filtered: [],
+        current: null,
+        score: 0,
+        total: 0,
+        rounds: 10,
+      };
+
+      const els = {
+        category: document.getElementById("category"),
+        rounds: document.getElementById("rounds"),
+        sentence: document.getElementById("sentence"),
+        choiceA: document.getElementById("choice-a"),
+        choiceB: document.getElementById("choice-b"),
+        feedback: document.getElementById("feedback"),
+        score: document.getElementById("score"),
+        total: document.getElementById("total"),
+        audio: document.getElementById("audio"),
+        play: document.getElementById("play-btn"),
+        next: document.getElementById("next-btn"),
+        status: document.getElementById("load-status"),
+        audioStatus: document.getElementById("audio-status"),
+        categoryLabel: document.getElementById("category-label"),
+        upload: document.getElementById("upload"),
+        sampleBtn: document.getElementById("use-sample"),
+      };
+
+      function setStatus(text, color = "var(--muted)") {
+        els.status.textContent = text;
+        els.status.style.color = color;
+      }
+
+      function blankSentence(sentence, blankIndex) {
+        const words = sentence.split(" ");
+        let idx = Number(blankIndex);
+        if (Number.isNaN(idx)) idx = -1;
+        if (idx >= words.length && idx - 1 < words.length) idx = idx - 1;
+        if (idx >= 0 && idx < words.length) {
+          words[idx] = "[  ]";
+        }
+        return words.join(" ");
+      }
+
+      function updateCategories(data) {
+        const categories = Array.from(new Set(data.map((d) => d.category))).sort();
+        els.category.innerHTML = "";
+        if (!categories.length) {
+          const opt = document.createElement("option");
+          opt.textContent = "No categories available";
+          els.category.appendChild(opt);
+          return;
+        }
+        categories.forEach((cat) => {
+          const opt = document.createElement("option");
+          opt.value = cat;
+          opt.textContent = cat;
+          els.category.appendChild(opt);
+        });
+        els.category.value = categories[0];
+        els.categoryLabel.textContent = categories[0];
+        state.filtered = data.filter((d) => d.category === categories[0]);
+      }
+
+      function renderItem(item) {
+        if (!item) return;
+        els.sentence.textContent = blankSentence(item.sentence, item.blank_index ?? item.blankIndex ?? item.blank);
+        els.choiceA.querySelector("span").textContent = item.optionA || "";
+        els.choiceB.querySelector("span").textContent = item.optionB || "";
+        els.choiceA.classList.remove("correct", "wrong");
+        els.choiceB.classList.remove("correct", "wrong");
+        els.feedback.textContent = "";
+        els.audioStatus.textContent = "";
+        const audioPath = item.audio || "";
+        if (audioPath) {
+          els.audio.src = audioPath;
+          els.audioStatus.textContent = "";
+        } else {
+          els.audio.removeAttribute("src");
+          els.audioStatus.textContent = "No audio in this sample; text-only.";
+        }
+      }
+
+      function pickItem() {
+        if (!state.filtered.length) {
+          els.sentence.textContent = "No items in this category.";
+          return null;
+        }
+        const idx = Math.floor(Math.random() * state.filtered.length);
+        state.current = state.filtered[idx];
+        return state.current;
+      }
+
+      function markChoice(buttonEl, correct) {
+        buttonEl.classList.add(correct ? "correct" : "wrong");
+      }
+
+      function lockChoices() {
+        els.choiceA.disabled = true;
+        els.choiceB.disabled = true;
+      }
+
+      function unlockChoices() {
+        els.choiceA.disabled = false;
+        els.choiceB.disabled = false;
+      }
+
+      function handleChoice(which) {
+        if (!state.current) return;
+        lockChoices();
+        const item = state.current;
+        const chosen = which === "A" ? item.optionA : item.optionB;
+        const correct = (item.correct || "").toLowerCase();
+        const isCorrect = chosen && chosen.toLowerCase() === correct;
+        if (which === "A") {
+          markChoice(els.choiceA, isCorrect);
+        } else {
+          markChoice(els.choiceB, isCorrect);
+        }
+        if (isCorrect) {
+          state.score += 1;
+          els.feedback.textContent = "Correct!";
+          els.feedback.className = "feedback good";
+        } else {
+          els.feedback.textContent = `Incorrect. Correct answer: ${item.correct}`;
+          els.feedback.className = "feedback bad";
+        }
+        state.total += 1;
+        els.score.textContent = state.score;
+        els.total.textContent = state.total;
+      }
+
+      function nextRound() {
+        unlockChoices();
+        const item = pickItem();
+        if (!item) return;
+        renderItem(item);
+        els.feedback.textContent = "";
+      }
+
+      function setData(items) {
+        state.data = items;
+        setStatus(`Loaded ${items.length} items`, "var(--accent)");
+        updateCategories(items);
+        state.score = 0;
+        state.total = 0;
+        els.score.textContent = "0";
+        els.total.textContent = "0";
+        nextRound();
+      }
+
+      async function tryLoadRemote() {
+        try {
+          const res = await fetch("../data/quiz_items.json", { cache: "no-store" });
+          if (!res.ok) throw new Error(res.status);
+          const items = await res.json();
+          setData(items);
+        } catch (err) {
+          setStatus("Falling back to sample data", "var(--accent-strong)");
+          setData(DEFAULT_ITEMS);
+        }
+      }
+
+      function handleFileUpload(evt) {
+        const file = evt.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const items = JSON.parse(reader.result);
+            setData(items);
+          } catch (e) {
+            setStatus("Could not parse JSON file", "var(--error)");
+          }
+        };
+        reader.readAsText(file);
+      }
+
+      function initEvents() {
+        els.choiceA.addEventListener("click", () => handleChoice("A"));
+        els.choiceB.addEventListener("click", () => handleChoice("B"));
+        els.next.addEventListener("click", nextRound);
+        els.play.addEventListener("click", () => {
+          if (els.audio.src) {
+            els.audio.play().catch(() => {
+              els.audioStatus.textContent = "Could not play audio (check path).";
+            });
+          }
+        });
+        els.category.addEventListener("change", () => {
+          const cat = els.category.value;
+          els.categoryLabel.textContent = cat;
+          state.filtered = state.data.filter((d) => d.category === cat);
+          nextRound();
+        });
+        els.rounds.addEventListener("change", () => {
+          state.rounds = Number(els.rounds.value);
+          state.score = 0;
+          state.total = 0;
+          els.score.textContent = "0";
+          els.total.textContent = "0";
+          nextRound();
+        });
+        els.upload.addEventListener("change", handleFileUpload);
+        els.sampleBtn.addEventListener("click", () => setData(DEFAULT_ITEMS));
+      }
+
+      function bootstrap() {
+        initEvents();
+        tryLoadRemote();
+      }
+
+      bootstrap();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,213 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+
+\begin{document}
+
+\title{Instructions for Building a Multi-Category English Listening Quiz App\\
+Using Mozilla Common Voice from Hugging Face Hub}
+\author{Your Name}
+\date{\today}
+\maketitle
+
+\section*{Purpose of the Application}
+
+The purpose of this application is to help English learners improve their ability to distinguish confusing sounds in real speech.
+In the app, the user hears a sentence (audio), and on the screen the same sentence appears with one word hidden, for example
+\[
+\text{I \fbox{\phantom{have}} a pen.}
+\]
+Below the sentence, the app shows two confusing choices, such as
+\[
+\text{have} \quad\text{and}\quad \text{haven't}.
+\]
+The user selects one of them, and the app immediately shows whether the answer is correct.
+The same mechanism is used for other pairs such as L/R, V/B, S/TH, and D/TH.
+
+\section*{Step 1: Download Data from Hugging Face Hub}
+
+The Mozilla Common Voice dataset is hosted on the Hugging Face Hub, a platform for sharing datasets and models. You can download it programmatically.
+
+\subsection*{1.1 Choose the dataset and language}
+
+\begin{itemize}
+    \item The main dataset is located at \href{https://huggingface.co/datasets/mozilla-foundation/common_voice_16_1}{mozilla-foundation/common\_voice\_16\_1}.
+    \item You will need to choose a language (e.g., \texttt{en} for English) and a data split (e.g., \texttt{validated}, \texttt{train}).
+\end{itemize}
+
+\subsection*{1.2 Download the dataset}
+
+Use the provided Python script to download the data. From the command line, run a command of the following form (replace placeholders with your desired values):
+
+\begin{verbatim}
+python download_common_voice.py --language en --split validated
+\end{verbatim}
+
+This will download the specified part of the dataset and save it as a \texttt{.tar.gz} archive in the \texttt{data/} directory, then extract it to \texttt{data/corpus/}.
+
+\subsection*{1.3 Extract and prepare quiz items}
+
+After downloading and extracting the archive, you will have:
+
+\begin{itemize}
+  \item audio files (for example, \verb|.mp3|),
+  \item metadata files such as \verb|train.tsv|, \verb|dev.tsv|, \verb|test.tsv|.
+\end{itemize}
+
+Write a small script (with help from your code assistant) that:
+
+\begin{itemize}
+  \item reads a metadata file (for example, \verb|train.tsv|),
+  \item selects English sentences that contain target words for your categories,
+  \item records, for each selected sentence:
+        \begin{itemize}
+          \item the audio file path,
+          \item the full transcript,
+          \item the target word (to be blanked),
+          \item a confusing partner word,
+          \item the category (positive/negative, L/R, V/B, S/TH, D/TH).
+        \end{itemize}
+\end{itemize}
+
+Store the result in a simple JSON file, for example:
+
+\begin{verbatim}
+[
+  {
+    "category": "positive_negative",
+    "audio": "clips/abc123.mp3",
+    "sentence": "I have a pen.",
+    "blank_index": 2,
+    "optionA": "have",
+    "optionB": "haven't",
+    "correct": "have"
+  },
+  {
+    "category": "L_R",
+    "audio": "clips/xyz789.mp3",
+    "sentence": "Turn on the right light.",
+    "blank_index": 4,
+    "optionA": "light",
+    "optionB": "right",
+    "correct": "right"
+  }
+]
+\end{verbatim}
+
+\section*{Step 2: Set Up Your Coding Environment with a CLI Assistant}
+
+Prepare a development environment where you can run Python from the command line. Then:
+
+\begin{itemize}
+  \item install Python 3 and common packages such as \verb|requests|, \verb|pydub| or \verb|playsound|,
+  \item install your preferred AI coding assistant or CLI interface,
+  \item configure your API key for that coding assistant.
+\end{itemize}
+
+You will use the assistant mainly to generate boilerplate code: loading JSON, playing audio, handling user input, and running quiz loops.
+
+\section*{Step 3: Design the Quiz Flow}
+
+Use your coding assistant to help you write a Python script with the following structure.
+
+\subsection*{3.1 Category selection}
+
+When the script starts:
+
+\begin{itemize}
+  \item load the JSON file containing quiz items,
+  \item scan available categories in the data:
+        \begin{itemize}
+          \item positive\_negative
+          \item L\_R
+          \item V\_B
+          \item S\_TH
+          \item D\_TH
+        \end{itemize}
+  \item show a menu and let the user choose one category.
+\end{itemize}
+
+\subsection*{3.2 Single quiz round}
+
+For each round in the chosen category, the script should:
+
+\begin{enumerate}
+  \item Randomly select one quiz item from that category.
+  \item Play the corresponding audio sentence:
+        \begin{itemize}
+          \item for example, using \verb|playsound(item["audio"])|.
+        \end{itemize}
+  \item Display the sentence text on screen with the target word hidden.
+        For instance, if the sentence is ``I have a pen.'' and the target word index is 2, print something like
+        \[
+        \text{I \fbox{\phantom{have}} a pen.}
+        \]
+        (In practice, you can construct this string in Python by replacing the target word by \verb|[   ]|.)
+  \item Display two word choices directly under the sentence, for example:
+        \[
+        \text{A) have \quad B) haven't}
+        \]
+  \item Let the user type A or B (or click, if you use a web interface).
+  \item Compare the choice with the correct answer and print feedback, for example
+        ``Correct: the sentence was \textit{I have a pen.}'' or
+        ``Incorrect: the correct answer was \textit{have}.''
+  \item Optionally, show the full sentence with the correct word highlighted.
+\end{enumerate}
+
+Ask your coding assistant to generate helper functions such as:
+
+\begin{itemize}
+  \item \verb|load_quiz_data(filepath)| to read the JSON file,
+  \item \verb|get_random_item(category, data)| to choose a random quiz item,
+  \item \verb|play_audio(path)| to play the sound file,
+  \item \verb|run_quiz_round(item)| to handle one question and feedback,
+  \item \verb|run_quiz_loop(category, data)| to repeat several rounds.
+\end{itemize}
+
+\section*{Step 4: Implement a Simple Interface}
+
+\subsection*{4.1 Terminal interface}
+
+For a terminal-based version:
+
+\begin{itemize}
+  \item use \verb|playsound| or a similar library to play audio,
+  \item print the sentence with the blank and the two choices,
+  \item read user input from the keyboard (\verb|input()| in Python),
+  \item keep track of the score and number of questions.
+\end{itemize}
+
+\subsection*{4.2 Web interface (optional)}
+
+For a small web app (for example, with Flask):
+
+\begin{itemize}
+  \item create a route like \verb|/quiz| that:
+        \begin{itemize}
+          \item chooses a quiz item,
+          \item renders an HTML page with:
+                \begin{itemize}
+                  \item an \verb|<audio controls>| tag pointing to the audio file,
+                  \item the sentence with one word replaced by a box,
+                  \item two buttons or radio buttons for the two choices.
+                \end{itemize}
+        \end{itemize}
+  \item when a button is pressed, send the answer back to the server and return a page with feedback and the full correct sentence.
+\end{itemize}
+
+You can ask your coding assistant to generate template Flask code and simple HTML pages.
+
+\section*{Step 5: Test and Refine}
+
+Finally:
+
+\begin{itemize}
+  \item test each category and adjust sentences so that the difficulty feels appropriate,
+  \item verify that the audio always matches the text,
+  \item gradually add more quiz items from Common Voice to expand your practice library.
+\end{itemize}
+
+\end{document}
