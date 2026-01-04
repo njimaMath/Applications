@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Conversion from LaTeX to HTML</title>
+
+  <style>
+    :root{
+      --bg: #f6f8ff;
+      --paper: #ffffff;
+      --ink: #1f2937;
+      --muted: #4b5563;
+      --accent: #1f4aa8;
+      --accent-2: #0f766e;
+      --border: rgba(31,41,55,.14);
+      --shadow: 0 10px 30px rgba(0,0,0,.08);
+      --radius: 14px;
+    }
+
+    html, body { height: 100%; }
+    body{
+      margin: 0;
+      color: var(--ink);
+      background: radial-gradient(1200px 600px at 10% 0%, rgba(31,74,168,.12), transparent 55%),
+                  radial-gradient(900px 500px at 90% 10%, rgba(15,118,110,.10), transparent 55%),
+                  var(--bg);
+      font-family: ui-serif, Georgia, "Times New Roman", Times, serif;
+      line-height: 1.6;
+    }
+
+    a{ color: var(--accent); text-decoration: none; }
+    a:hover{ text-decoration: underline; }
+
+    .wrap{
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: 32px 18px 34px;
+    }
+
+    header{
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 22px 22px 18px;
+    }
+
+    .title{
+      margin: 0;
+      font-size: 2.0rem;
+      font-weight: 500;
+      letter-spacing: .2px;
+      color: var(--accent);
+    }
+
+    .meta{
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.98rem;
+    }
+
+    .panel{
+      margin-top: 18px;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px 22px;
+    }
+
+    .hint{
+      color: var(--muted);
+      font-size: 0.98rem;
+      margin: 0 0 12px;
+    }
+
+    textarea{
+      width: 100%;
+      min-height: 250px;
+      resize: vertical;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.92rem;
+      line-height: 1.35;
+      outline: none;
+      background: rgba(255,255,255,.9);
+    }
+
+    .row{
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+      align-items: center;
+    }
+
+    button{
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(31,74,168,.10), rgba(31,74,168,.04));
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 0.98rem;
+      font-weight: 500;
+    }
+    button:hover{
+      border-color: rgba(31,74,168,.30);
+      background: linear-gradient(180deg, rgba(31,74,168,.14), rgba(31,74,168,.06));
+    }
+
+    button.secondary{
+      background: linear-gradient(180deg, rgba(15,118,110,.10), rgba(15,118,110,.04));
+    }
+    button.secondary:hover{
+      border-color: rgba(15,118,110,.30);
+      background: linear-gradient(180deg, rgba(15,118,110,.14), rgba(15,118,110,.06));
+    }
+
+    button.warn{
+      background: linear-gradient(180deg, rgba(153,27,27,.10), rgba(153,27,27,.04));
+    }
+    button.warn:hover{
+      border-color: rgba(153,27,27,.28);
+      background: linear-gradient(180deg, rgba(153,27,27,.14), rgba(153,27,27,.06));
+    }
+
+    .paper{
+      margin-top: 16px;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 26px 26px 30px;
+      overflow-wrap: anywhere;
+    }
+
+    /* Preserve TeX line breaks while keeping a paper-like feel */
+    .paper{ white-space: pre-wrap; }
+
+    h1.doc-title{
+      font-size: 2.05rem;
+      margin: 0 0 2px;
+      color: var(--accent);
+      font-weight: 550;
+    }
+    .doc-authors{
+      color: var(--muted);
+      margin: 0 0 2px;
+      font-size: 1.02rem;
+    }
+    .doc-affil{
+      color: var(--muted);
+      margin: 0;
+      font-size: 0.98rem;
+    }
+    .front{
+      margin: 0 0 18px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(31,74,168,.18);
+      background: rgba(31,74,168,.04);
+    }
+
+    h2, h3, h4{
+      font-weight: 500;
+      color: var(--accent);
+      margin: 22px 0 10px;
+    }
+    h3{ color: var(--accent-2); }
+    h4{ color: var(--ink); }
+
+    .secno{
+      color: var(--muted);
+      margin-right: 10px;
+      font-weight: 500;
+    }
+
+    .env{
+      border-left: 4px solid rgba(31,74,168,.35);
+      background: rgba(31,74,168,.04);
+      padding: 12px 14px;
+      border-radius: 12px;
+      margin: 14px 0;
+      white-space: pre-wrap;
+    }
+    .env.proof{
+      border-left-color: rgba(15,118,110,.40);
+      background: rgba(15,118,110,.04);
+    }
+    .env .env-head{
+      color: var(--muted);
+      letter-spacing: .2px;
+      margin-bottom: 6px;
+    }
+
+    .abstract{
+      border-left: 4px solid rgba(15,118,110,.45);
+      background: rgba(15,118,110,.04);
+      padding: 12px 14px;
+      border-radius: 12px;
+      margin: 14px 0 18px;
+    }
+    .abstract .env-head{ color: var(--muted); margin-bottom: 6px; }
+
+    ul.itemize{
+      margin: 8px 0 8px 22px;
+      padding: 0;
+    }
+    ul.itemize li{ margin: 6px 0; }
+    .item-label{
+      color: var(--muted);
+      margin-right: 8px;
+    }
+
+    ol.references{
+      margin: 8px 0 0 22px;
+      padding: 0;
+    }
+    ol.references li{ margin: 10px 0; }
+    .bibkey{ color: var(--muted); margin-right: 8px; }
+    .bibcode{ color: var(--muted); margin-right: 8px; }
+
+    .smallnote{
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+  </style>
+
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true,
+        processEnvironments: true,
+        tags: 'ams',
+        macros: {
+          coloneqq: '\\mathrel{:=}'
+        }
+      }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+
+<body>
+  <a id="top"></a>
+
+  <div class="wrap">
+    <header>
+      <h1 class="title">Conversion from LaTeX to HTML</h1>
+      <div class="meta">
+        Paste a LaTeX source file, render it with MathJax, and export a standalone HTML document.
+      </div>
+    </header>
+
+    <section class="panel">
+      <p class="hint">
+        This is a lightweight converter: it styles sections, theorem-like environments, itemize, and the bibliography.
+        Mathematical expressions remain in TeX and are typeset by MathJax.
+        Cross-references are improved: theorem/section references are resolved, and equation references use MathJax labels.
+      </p>
+
+      <textarea id="tex" spellcheck="false" placeholder="Paste your LaTeX source here (including \begin{document} ... \end{document})."></textarea>
+
+      <div class="row">
+        <button id="render">Render</button>
+        <button id="download" class="secondary">Download HTML</button>
+        <button id="clear" class="warn">Clear</button>
+        <button id="load-sample" class="secondary" title="Optional: load a small sample snippet">Load sample snippet</button>
+      </div>
+
+      <div class="smallnote">
+        Note: MathJax is loaded from a public CDN. The exported HTML file will typeset math when opened with an internet connection.
+      </div>
+    </section>
+
+    <main id="paper" class="paper" aria-live="polite">
+      <span style="color: var(--muted);">Rendered content will appear here.</span>
+    </main>
+  </div>
+
+  <script>
+    const byId = (id) => document.getElementById(id);
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function sanitizeId(lbl){
+      return String(lbl || '')
+        .trim()
+        .replace(/\s+/g,'-')
+        .replace(/[^\w\-:.]/g,'');
+    }
+
+    function stripComments(s){
+      // Remove full-line comments. (Inline comments are not handled.)
+      return s.replace(/^\s*%.*$/gm, '');
+    }
+
+    function extractDocumentBody(src){
+      const m = src.match(/\\begin\{document\}([\s\S]*?)\\end\{document\}/);
+      return m ? m[1].trim() : src.trim();
+    }
+
+    function extractMeta(src){
+      const grab = (cmd) => {
+        const re = new RegExp('\\\\' + cmd + '\\{([\\s\\S]*?)\\}', 'm');
+        const m = src.match(re);
+        return m ? m[1].trim() : '';
+      };
+      return {
+        title: grab('title'),
+        author: grab('author'),
+        affil: grab('affil'),
+        date: grab('date')
+      };
+    }
+
+    function buildMaps(rawBody){
+      const sectionMap = new Map();      // label -> "1" or "2.3" etc.
+      const sectionIdMap = new Map();    // label -> sanitized id
+      const theoremMap = new Map();      // label -> integer
+      const bibMap = new Map();          // bibkey -> integer
+
+      // Headings
+      let sec = 0, sub = 0, subsub = 0;
+      const headingRe = /\\(section|subsection|subsubsection)\*?\{([^}]*)\}(?:\s*\\label\{([^}]*)\})?/g;
+      let hm;
+      while((hm = headingRe.exec(rawBody)) !== null){
+        const kind = hm[1];
+        const lbl = hm[3] ? hm[3].trim() : '';
+        if(kind === 'section'){
+          sec += 1; sub = 0; subsub = 0;
+        }else if(kind === 'subsection'){
+          sub += 1; subsub = 0;
+        }else{
+          subsub += 1;
+        }
+        let num = String(sec);
+        if(kind === 'subsection') num = sec + '.' + sub;
+        if(kind === 'subsubsection') num = sec + '.' + sub + '.' + subsub;
+        if(lbl){
+          sectionMap.set(lbl, num);
+          sectionIdMap.set(lbl, sanitizeId(lbl));
+        }
+      }
+
+      // Theorem-like environments share one counter in this manuscript
+      let thm = 0;
+      const thmRe = /\\begin\{(theorem|lemma|claim|remark)\}(?:\[[^\]]*\])?\s*(?:\\label\{([^}]*)\})?/g;
+      let tm;
+      while((tm = thmRe.exec(rawBody)) !== null){
+        thm += 1;
+        const lbl = tm[2] ? tm[2].trim() : '';
+        if(lbl){
+          theoremMap.set(lbl, thm);
+        }
+      }
+
+      // Bibliography keys
+      const bibEnv = rawBody.match(/\\begin\{thebibliography\}\{[^}]*\}([\s\S]*?)\\end\{thebibliography\}/);
+      if(bibEnv){
+        const inner = bibEnv[1];
+        const parts = inner.split(/\\bibitem\{([^}]*)\}/g);
+        let idx = 0;
+        for(let i=1;i<parts.length;i+=2){
+          const key = (parts[i] || '').trim();
+          if(!key) continue;
+          idx += 1;
+          bibMap.set(key, idx);
+        }
+      }
+
+      return { sectionMap, sectionIdMap, theoremMap, bibMap };
+    }
+
+    function convertItemizeBlocks(s){
+      return s.replace(/\\begin\{itemize\}([\s\S]*?)\\end\{itemize\}/g, (m, inner) => {
+        const parts = inner.split(/\\item/g).map(x => x.trim()).filter(Boolean);
+        const items = parts.map(x => {
+          // Optional label: [ ... ]
+          let label = '';
+          let rest = x;
+          const m1 = rest.match(/^\[(.*?)\]\s*/);
+          if(m1){
+            label = m1[1];
+            rest = rest.slice(m1[0].length);
+          }
+          if(label){
+            return `<li><span class="item-label">${label}</span>${rest}</li>`;
+          }
+          return `<li>${rest}</li>`;
+        }).join('\n');
+        return `<ul class="itemize">\n${items}\n</ul>`;
+      });
+    }
+
+    function convertBibliography(s, maps){
+      return s.replace(/\\begin\{thebibliography\}\{[^}]*\}([\s\S]*?)\\end\{thebibliography\}/g, (m, inner) => {
+        const entries = inner.split(/\\bibitem\{([^}]*)\}/g);
+        const items = [];
+        let n = 0;
+        for(let i=1;i<entries.length;i+=2){
+          const key = (entries[i] || '').trim();
+          let txt = (entries[i+1] || '').trim();
+          if(!key) continue;
+          n += 1;
+          txt = txt.replace(/\\newblock/g, '<br>');
+          const shown = maps.bibMap.get(key) || n;
+          items.push(`<li id="ref-${key}"><span class="bibkey">[${shown}]</span><span class="bibcode">${key}</span>${txt}</li>`);
+        }
+        return `<h2 id="references">References</h2>\n<ol class="references">\n${items.join('\n')}\n</ol>`;
+      });
+    }
+
+    function convertTheorems(s, maps){
+      const envs = ['theorem','lemma','claim','remark'];
+      const niceName = (env) => env.charAt(0).toUpperCase() + env.slice(1);
+
+      let thmCounter = 0;
+
+      // Convert \begin{...}[optional] \label{...}
+      s = s.replace(/\\begin\{(theorem|lemma|claim|remark)\}(?:\[(.*?)\])?\s*(?:\\label\{([^}]*)\})?/g,
+        (m, env, opt, lbl) => {
+          thmCounter += 1;
+          const cap = niceName(env);
+          const cleanLbl = lbl ? lbl.trim() : '';
+          const id = cleanLbl ? sanitizeId(cleanLbl) : '';
+          const num = cleanLbl && maps.theoremMap.has(cleanLbl) ? maps.theoremMap.get(cleanLbl) : thmCounter;
+
+          const extra = (opt && opt.trim()) ? ` (${opt.trim()})` : '';
+          const idAttr = id ? ` id="${id}"` : '';
+          return `<div class="env ${env}"${idAttr}><div class="env-head">${cap} ${num}${extra}.</div>`;
+        });
+
+      for(const env of envs){
+        s = s.replace(new RegExp('\\\\end\\{' + env + '\\}', 'g'), '</div>');
+      }
+
+      // Proof (optional title)
+      s = s.replace(/\\begin\{proof\}(?:\[(.*?)\])?/g, (m, t) => {
+        const title = t ? t : 'Proof.';
+        return `<div class="env proof"><div class="env-head">${title}</div>`;
+      });
+      s = s.replace(/\\end\{proof\}/g, '</div>');
+      return s;
+    }
+
+    function convertHeadings(s, maps){
+      let sec = 0, sub = 0, subsub = 0;
+
+      // section / subsection / subsubsection with optional label
+      s = s.replace(/\\section\*?\{([^}]*)\}(?:\s*\\label\{([^}]*)\})?/g, (m, t, lbl) => {
+        sec += 1; sub = 0; subsub = 0;
+        const num = String(sec);
+        const cleanLbl = lbl ? lbl.trim() : '';
+        const id = cleanLbl ? (maps.sectionIdMap.get(cleanLbl) || sanitizeId(cleanLbl)) : `sec-${sec}`;
+        return `<h2 id="${id}"><span class="secno">${num}.</span>${t}</h2>`;
+      });
+
+      s = s.replace(/\\subsection\*?\{([^}]*)\}(?:\s*\\label\{([^}]*)\})?/g, (m, t, lbl) => {
+        sub += 1; subsub = 0;
+        const num = sec + '.' + sub;
+        const cleanLbl = lbl ? lbl.trim() : '';
+        const id = cleanLbl ? (maps.sectionIdMap.get(cleanLbl) || sanitizeId(cleanLbl)) : `subsec-${sec}-${sub}`;
+        return `<h3 id="${id}"><span class="secno">${num}.</span>${t}</h3>`;
+      });
+
+      s = s.replace(/\\subsubsection\*?\{([^}]*)\}(?:\s*\\label\{([^}]*)\})?/g, (m, t, lbl) => {
+        subsub += 1;
+        const num = sec + '.' + sub + '.' + subsub;
+        const cleanLbl = lbl ? lbl.trim() : '';
+        const id = cleanLbl ? (maps.sectionIdMap.get(cleanLbl) || sanitizeId(cleanLbl)) : `subsubsec-${sec}-${sub}-${subsub}`;
+        return `<h4 id="${id}"><span class="secno">${num}.</span>${t}</h4>`;
+      });
+
+      return s;
+    }
+
+    function convertAbstract(s){
+      s = s.replace(/\\begin\{abstract\}/g, '<div class="abstract"><div class="env-head">Abstract.</div>');
+      s = s.replace(/\\end\{abstract\}/g, '</div>');
+      return s;
+    }
+
+    function convertInlineTextCommands(s){
+      s = s.replace(/\\textup\{([^}]*)\}/g, '$1');
+      s = s.replace(/\\emph\{([^}]*)\}/g, '<em>$1</em>');
+      s = s.replace(/\\appendix/g, '');
+      return s;
+    }
+
+    function buildFrontMatter(meta){
+      const t = (meta.title || '').trim();
+      const a = (meta.author || '').trim();
+      const f = (meta.affil || '').trim();
+      const d = (meta.date || '').trim();
+
+      if(!t && !a && !f && !d) return '';
+
+      const pieces = [];
+      if(t) pieces.push(`<h1 class="doc-title">${t}</h1>`);
+      if(a) pieces.push(`<p class="doc-authors">${a}</p>`);
+      if(f) pieces.push(`<p class="doc-affil">${f}</p>`);
+      if(d) pieces.push(`<p class="doc-affil">${d}</p>`);
+
+      return `<div class="front">\n${pieces.join('\n')}\n</div>`;
+    }
+
+    function convertCites(s, maps){
+      // Numeric citations when bibliography is present; fallback to key text otherwise.
+      return s.replace(/\\cite\{([^}]*)\}/g, (m, keys) => {
+        const parts = String(keys).split(',').map(x => x.trim()).filter(Boolean);
+        if(parts.length === 0) return m;
+        const links = parts.map(k => {
+          const num = maps.bibMap.has(k) ? maps.bibMap.get(k) : k;
+          return `<a href="#ref-${k}">${num}</a>`;
+        });
+        return `[${links.join(', ')}]`;
+      });
+    }
+
+    function convertRefs(s, maps){
+      // Equation references: use MathJax labels by wrapping into inline math.
+      // Text references (theorem/section): resolve numbers and link to anchors.
+      s = s.replace(/\\eqref\{([^}]*)\}/g, (m, lbl) => {
+        const L = (lbl || '').trim();
+        if(/^eq:/.test(L)){
+          return `\\(\\eqref{${L}}\\)`;
+        }
+        // fallback
+        const id = sanitizeId(L);
+        if(maps.theoremMap.has(L)) return `<a href="#${id}">(${maps.theoremMap.get(L)})</a>`;
+        if(maps.sectionMap.has(L)) return `<a href="#${id}">(${maps.sectionMap.get(L)})</a>`;
+        return `<a href="#${id}">(${L})</a>`;
+      });
+
+      s = s.replace(/\\ref\{([^}]*)\}/g, (m, lbl) => {
+        const L = (lbl || '').trim();
+        if(/^eq:/.test(L)){
+          return `\\(\\ref{${L}}\\)`;
+        }
+        const id = sanitizeId(L);
+        if(maps.theoremMap.has(L)) return `<a href="#${id}">${maps.theoremMap.get(L)}</a>`;
+        if(maps.sectionMap.has(L)) return `<a href="#${id}">${maps.sectionMap.get(L)}</a>`;
+        return `<a href="#${id}">${L}</a>`;
+      });
+
+      return s;
+    }
+
+    function convertLatexToHTML(src){
+      const meta = extractMeta(src);
+
+      // Build maps from the raw (non-escaped) document body
+      const rawBody = stripComments(extractDocumentBody(src));
+      const maps = buildMaps(rawBody);
+
+      // Escape HTML, then apply structural conversions
+      let s = escapeHTML(rawBody);
+
+      // Replace \maketitle using extracted meta (if present)
+      s = s.replace(/\\maketitle/g, buildFrontMatter(meta));
+
+      s = convertInlineTextCommands(s);
+      s = convertAbstract(s);
+      s = convertHeadings(s, maps);
+      s = convertTheorems(s, maps);
+      s = convertItemizeBlocks(s);
+      s = convertBibliography(s, maps);
+      s = convertCites(s, maps);
+      s = convertRefs(s, maps);
+
+      return { html: s, meta };
+    }
+
+    async function typeset(el){
+      if(!window.MathJax || !MathJax.typesetPromise) return;
+
+      // Reset labels and equation numbers between renders
+      if(MathJax.typesetClear) MathJax.typesetClear([el]);
+      if(MathJax.texReset) MathJax.texReset();
+
+      await MathJax.typesetPromise([el]);
+    }
+
+    function buildStandaloneDocument(convertedHTML, meta){
+      const docTitle = (meta && meta.title) ? meta.title.trim() : 'Converted document';
+      const safeTitle = docTitle.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+      // Reuse the same style and MathJax configuration in the exported file
+      const styleTag = document.querySelector('style')?.innerHTML || '';
+      const mjConfig = document.querySelector('script')?.innerHTML || '';
+
+      const generatedAt = new Date().toLocaleString();
+
+      return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${safeTitle}</title>
+  <style>${styleTag}</style>
+  <script>${mjConfig}</script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1 class="title">${safeTitle}</h1>
+      <div class="meta">Exported from the LaTeX-to-HTML converter on ${generatedAt}.</div>
+    </header>
+    <main class="paper">${convertedHTML}</main>
+  </div>
+</body>
+</html>`;
+    }
+
+    function downloadText(filename, text){
+      const blob = new Blob([text], {type: 'text/html;charset=utf-8'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 500);
+    }
+
+    const paper = byId('paper');
+    const tex = byId('tex');
+    let lastConversion = null; // {html, meta}
+
+    byId('render').addEventListener('click', async () => {
+      lastConversion = convertLatexToHTML(tex.value);
+      paper.innerHTML = lastConversion.html;
+      await typeset(paper);
+      location.hash = '#top';
+    });
+
+    byId('download').addEventListener('click', () => {
+      if(!lastConversion){
+        alert('Render the document first, then download.');
+        return;
+      }
+      const meta = lastConversion.meta || {};
+      const base = (meta.title || 'converted_document').trim()
+                    .replace(/\s+/g,'_')
+                    .replace(/[^\w\-]/g,'')
+                    .slice(0, 60) || 'converted_document';
+      const filename = base + '.html';
+      const doc = buildStandaloneDocument(lastConversion.html, meta);
+      downloadText(filename, doc);
+    });
+
+    byId('clear').addEventListener('click', () => {
+      tex.value = '';
+      lastConversion = null;
+      paper.innerHTML = '<span style="color: var(--muted);">Rendered content will appear here.</span>';
+    });
+
+    byId('load-sample').addEventListener('click', () => {
+      tex.value = String.raw`\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm}
+
+\title{Sample: Cross references}
+\author{A. Author}
+\date{}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A short sample: $\alpha_c(\kappa)=\frac{2}{\pi\,\mathbb E[(\kappa-Z)_+^2]}$.
+\end{abstract}
+
+\section{Setup}\label{sec:setup}
+We refer to Section~\ref{sec:setup}.
+
+\begin{theorem}\label{thm:sample}
+For $\alpha\in(0,\alpha_c(\kappa))$ the saddle point equation has a unique solution.
+\end{theorem}
+We refer to Theorem~\ref{thm:sample}.
+
+\begin{equation}\label{eq:one}
+1+1=2.
+\end{equation}
+We refer to \eqref{eq:one}.
+
+\begin{thebibliography}{99}
+\bibitem{Example2026}
+A. Author. \emph{A reference}. Journal, 2026.
+\end{thebibliography}
+
+\end{document}`;
+    });
+  </script>
+</body>
+</html>
